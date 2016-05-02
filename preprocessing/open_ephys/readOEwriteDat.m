@@ -9,8 +9,8 @@ function readOEwriteDat(oe_path)
 % accelerometers?)#
 
 oe_dir = dir([oe_path filesep '*.continuous']);
-oe_ch = cellfun(@any, regexp({oe_dir.name},'CH\d*.continuous'));
-oe_adc = cellfun(@any, regexp({oe_dir.name},'ADC\d*.continuous'));
+oe_ch = cellfun(@any, regexp({oe_dir.name},'CH\d*'));
+oe_adc = cellfun(@any, regexp({oe_dir.name},'ADC\d'));
 
 oe_ch_filenames = sort(cellfun(@(x) [oe_path filesep x], ...
     {oe_dir(oe_ch).name},'uni',false));
