@@ -3,4 +3,4 @@ cortex lab code for electrophysiology
 
 Pipeline: 
 
-Convert OE to raw DAT for processing - readOEwriteDat
+Convert open-ephys to raw .dat for processing - readOEwriteDat
