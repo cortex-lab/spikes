@@ -1,5 +1,5 @@
 function readOEwriteDat(oe_path,sync_channel,sync_input)
-% function readOEwriteDat(oe_path,sync_channel)
+% function readOEwriteDat(oe_path,sync_channel,sync_input)
 %
 % Get all .continuous files in folder, break into CH and ADC
 % (note: AUX channels are currently ignored, they're for headstage
