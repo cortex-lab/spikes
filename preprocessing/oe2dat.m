@@ -1,19 +1,23 @@
-function oe2dat(oe_path,sync_channel,sync_input)
-% function oe2dat(oe_path,sync_channel,sync_input)
+function oe2dat(oe_path,save_path,sync_channel,sync_input)
+% oe2dat(oe_path,save_path,sync_channel,sync_input)
 %
-% Get all .continuous files in folder, break into CH and ADC
-% (note: AUX channels are currently ignored, they're for headstage
-% accelerometers?)
+% Converts OE format recorded from open-ephys into flat binary
+% Also saves sync channel and parameters/header info
 %
-% oe_path - the directory with open-ephys data to convert
-% saves CH (ephys.dat) and ADC (sync.dat) files seperately in oe_path
+% oe_path - path with open-ephys data to convert
+% save_path - path to save converted data
 %
 % sync_channel - which ADC/TTL channel contains synchronization information 
-% NOTE: input TTL channel as 1-indexed like in GUI, not 0-indexed like in
-% saved data
-%
+% (NOTE: input TTL channel as 1-indexed like in GUI, not 0-indexed like in
+% saved data)
 % sync_input - 'ttl' or 'adc' depending on which input used for sync
 
+warning('This isn''t equivalent to kwik2dat yet: doesn''t save all parameters, doesn''t split/filter/CAR data');
+
+%% Make save directory
+if ~exist(save_dir,'dir');
+    mkdir(savedir)
+end
 
 %% Set paths and memory
 oe_dir = dir([oe_path]);
@@ -39,7 +43,7 @@ nCH = length(oe_ch_filenames);
 chunkSizeSamps = nint16s/nCH;
 nChunks = ceil(totalSamps/chunkSizeSamps);
 
-outFile = [oe_path filesep 'ephys.dat'];
+outFile = [save_path filesep 'ephys.dat'];
 fid = fopen(outFile, 'w');
 
 for chunkInd = 1:nChunks
@@ -89,7 +93,7 @@ switch sync_input
         % timestamps(1)/sample rate)
         sync_timestamps = sync_timestamps - timestamps(1);
         
-        outFile = [oe_path filesep 'sync.mat'];
+        outFile = [save_path filesep 'sync.mat'];
         save(outFile,'sync_timestamps');
         
     case 'adc'
@@ -101,7 +105,7 @@ switch sync_input
         chunkSizeSamps = nint16s;
         nChunks = ceil(totalSamps/chunkSizeSamps);
         
-        outFile = [oe_path filesep 'sync.dat'];
+        outFile = [save_path filesep 'sync.dat'];
         fid = fopen(outFile, 'w');
         
         for chunkInd = 1:nChunks
@@ -130,4 +134,24 @@ switch sync_input
         fclose(fid);
         
 end
+
+%% Save parameters/header information in separate file
+
+warning('sample rate and gain not included in header yet because I haven''t looked for where they''re stored');
+% it's in the 'info' of the function to load OE, I just don't have sample
+% data at the moment
+params = {'raw_path',['''' oe_path '''']; ...
+    'n_channels',num2str(nCH)};
+%    'sample_rate',num2str(sample_rate); ...
+%    'gain',num2str(ch_gain)};
+
+param_filename = [save_path filesep 'dat_params.txt'];
+
+formatSpec = '%s = %s \r\n';
+fid = fopen(param_filename,'w');
+for curr_param = 1:size(params,1)
+    fprintf(fid,formatSpec,params{curr_param,:});
+end
+fclose(fid);
+
 

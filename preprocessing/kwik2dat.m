@@ -1,15 +1,26 @@
-function kwik2dat(kwik_path,sync_channel,sync_input)
-% kwik2dat(kwk_path,sync_channel)
+function kwik2dat(kwik_path,save_path,sync_channel,sync_input)
+% kwik2dat(kwik_path,save_path,sync_channel,sync_input)
 %
 % Converts kwik format recorded from open-ephys into flat binary
-% also saves sync channel (currently just through TTL)
+% Also saves sync channel and parameters/header info
+%
 % kwk_path - path with kwik files
+% save_path - path to save the converted data
+%
 % sync_channel - TTL channel with synchronization input to save
+% (NOTE: input TTL channel as 1-indexed like in GUI, not 0-indexed like in
+% saved data)
 % sync_input - 'ttl' or 'adc', depending on digital/analog in of sync
+
 
 % Kwik files from open ephys: 
 % .raw.kwd: continuous data from all channels
 % .kwe: event data
+
+%% Make save directory
+if ~exist(save_path,'dir');
+    mkdir(save_path)
+end
 
 %% Get filenames for each experiment in path
 kwd_dir = dir([kwik_path filesep '*.kwd']);
@@ -26,20 +37,46 @@ kwik_settings = xml2struct(settings_filename);
 ephys_ch = cellfun(@(x) any(strfind(x.Attributes.name,'CH')), ...
     kwik_settings.SETTINGS.SIGNALCHAIN.PROCESSOR{1}.CHANNEL_INFO.CHANNEL);
 
-% Get sample rate
+% Get sample rate and gain
 rec_info_locationInKWD = '/recordings/0';
 rec_info = h5info(kwd_filename,rec_info_locationInKWD);
 sample_rate_idx = cellfun(@(x) strcmp(x,'sample_rate'),{rec_info.Attributes.Name});
 sample_rate = double(rec_info.Attributes(sample_rate_idx).Value);
+
+ch_gain = cellfun(@(x) str2num(x.Attributes.gain), ...
+    kwik_settings.SETTINGS.SIGNALCHAIN.PROCESSOR{1}.CHANNEL_INFO.CHANNEL(ephys_ch));
+if length(unique(ch_gain)) == 1
+    ch_gain = unique(ch_gain);
+else
+    error('Gains set differently for different channel: no contingency for this in param file yet')
+end
+
 
 %% Load in the continuous electrophysiology data and save as .dat
 locationInKWD = '/recordings/0/data';
 info = h5info(kwd_filename,locationInKWD);
 dat = h5read(kwd_filename, locationInKWD);
 
-ephys_save_filename = [kwik_path filesep 'ephys.dat'];
-fid = fopen(ephys_save_filename, 'w');
-fwrite(fid, dat(ephys_ch,:), 'int16');
+% Split the signal in two:
+
+% 1) LFP (low-pass filtered and downsampled)
+lfp_cutoff = 500;
+[b, a] = butter(3, lfp_cutoff/sample_rate, 'low');
+dat_lfp = filter(b,a,single(dat(ephys_ch,:)'))';
+dat_lfp = dat_lfp(:,1:(sample_rate/lfp_cutoff)/2:end);
+
+lfp_save_filename = [save_path filesep 'lfp.dat'];
+fid = fopen(lfp_save_filename, 'w');
+fwrite(fid, dat_lfp, 'int16');
+fclose(fid);
+
+% 2) Spikes with median across channels subtracted
+dat_car = bsxfun(@minus,dat(ephys_ch,:),int16(mean(dat(ephys_ch,:),2)));
+dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
+
+spikes_save_filename = [save_path filesep 'spikes.dat'];
+fid = fopen(spikes_save_filename, 'w');
+fwrite(fid, dat_car, 'int16');
 fclose(fid);
 
 %% Save synchronization input as .mat
@@ -66,13 +103,13 @@ switch sync_input
         sync.timestamps = double(ttl_samplestamp(sync_events))/ttl_sample_rate;
         sync.values = logical(ttl_values(sync_events));
         
-        sync_save_filename = [kwik_path filesep 'sync.mat'];
+        sync_save_filename = [save_path filesep 'sync.mat'];
         save(sync_save_filename,'sync');
         
     case 'adc'
         % If sync was recorded through analog input
         
-        % Find the desired ADC channel index
+        % Find the sync ADC channel index
         recorded_sync_ch = cellfun(@(x) strcmp(['ADC' num2str(sync_channel)],x.Attributes.name), ...
             kwik_settings.SETTINGS.SIGNALCHAIN.PROCESSOR{1}.CHANNEL_INFO.CHANNEL);
         
@@ -84,10 +121,33 @@ switch sync_input
         sync.timestamps = sync_samplestamp/sample_rate;
         sync.values = sync_trace(sync_samplestamp);
         
-        sync_save_filename = [kwik_path filesep 'sync.mat'];
+        sync_save_filename = [save_path filesep 'sync.mat'];
         save(sync_save_filename,'sync');
         
 end
+
+%% Save parameters/header information in separate file
+
+params = {'raw_path',['''' kwik_path '''']; ...
+    'n_channels',num2str(sum(ephys_ch)); ...
+    'sample_rate',num2str(sample_rate); ...
+    'gain',num2str(ch_gain); ...
+    'lfp_cutoff',num2str(lfp_cutoff)};
+
+param_filename = [save_path filesep 'dat_params.txt'];
+
+formatSpec = '%s = %s \r\n';
+fid = fopen(param_filename,'w');
+for curr_param = 1:size(params,1)
+    fprintf(fid,formatSpec,params{curr_param,:});
+end
+fclose(fid);
+
+
+
+
+
+
 
 
 
