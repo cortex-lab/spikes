@@ -2,6 +2,8 @@ function kwik2dat(kwik_path,save_path,sync_channel,sync_input)
 % kwik2dat(kwik_path,save_path,sync_channel,sync_input)
 %
 % Converts kwik format recorded from open-ephys into flat binary
+% Splits signal in two: one 500 Hz low-pass LFP(lfp.dat), 
+% one cross-channel median subtracted spike (spikes.dat)
 % Also saves sync channel and parameters/header info
 %
 % kwk_path - path with kwik files
@@ -71,7 +73,7 @@ fwrite(fid, dat_lfp, 'int16');
 fclose(fid);
 
 % 2) Spikes with median across channels subtracted
-dat_car = bsxfun(@minus,dat(ephys_ch,:),int16(mean(dat(ephys_ch,:),2)));
+dat_car = bsxfun(@minus,dat(ephys_ch,:),int16(median(dat(ephys_ch,:),2)));
 dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
 
 spikes_save_filename = [save_path filesep 'spikes.dat'];
@@ -136,7 +138,7 @@ params = {'raw_path',['''' kwik_path '''']; ...
 
 param_filename = [save_path filesep 'dat_params.txt'];
 
-formatSpec = '%s = %s \r\n';
+formatSpec = '%s = %s\r\n';
 fid = fopen(param_filename,'w');
 for curr_param = 1:size(params,1)
     fprintf(fid,formatSpec,params{curr_param,:});
