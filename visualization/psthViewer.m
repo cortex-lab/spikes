@@ -7,9 +7,9 @@ function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 % - c: dialog box to pick a new cluster ID number
 % - t: toggle showing psth traces for each grouping variable or just the
 % overall. If showing just overall, raster is sorted chronologically. If
-% showing by grouping variable, raster is sorted by that variable. 
+% showing by grouping variable, raster is sorted by that variable.
 % - r: select a new range within which to count spikes for the tuning curve
-% - 
+% -
 %
 % TODO:
 % - if plotting all traces, color raster and sort
@@ -40,7 +40,7 @@ params.colors = copper(myData.nGroups); params.colors = params.colors(:, [3 2 1]
 
 myData.params = params;
 
-f = figure; 
+f = figure;
 
 set(f, 'UserData', myData);
 set(f, 'KeyPressFcn', @(f,k)psthViewerCallback(f, k));
@@ -71,9 +71,9 @@ smWin = gw./sum(gw);
 % smooth ba
 baSm = conv2(smWin,1,ba', 'same')'./myData.params.binSize;
 
-% construct psth(s) and smooth it 
+% construct psth(s) and smooth it
 if myData.params.showAllTraces
-    psthSm = zeros(nGroups, numel(bins)); 
+    psthSm = zeros(nGroups, numel(bins));
     if myData.params.showErrorShading
         stderr = zeros(nGroups, numel(bins));
     end
@@ -84,7 +84,7 @@ if myData.params.showAllTraces
         end
     end
 else
-        
+    
     psthSm = mean(baSm);
     if myData.params.showErrorShading
         stderr = std(baSm)./sqrt(size(baSm,1));
@@ -113,7 +113,7 @@ for g = 1:nGroups
     tuningCurve(g,2) = std(theseCounts)./sqrt(length(theseCounts));
 end
 
- 
+
 % Make plots
 colors = myData.params.colors;
 subplot(3,1,1); hold off;
@@ -161,7 +161,7 @@ switch keydata.Key
         myData.params.clusterIndex = myData.params.clusterIndex+1;
         if myData.params.clusterIndex>length(myData.clusterIDs)
             myData.params.clusterIndex=1;
-        end        
+        end
         
     case 'leftarrow' % decrement cluster index
         
@@ -182,21 +182,21 @@ switch keydata.Key
     case 't' % whether to plot the psth trace for each condition or just the overall one
         myData.params.showAllTraces = ~myData.params.showAllTraces;
         
-    case 'r' 
+    case 'r'
         ax = subplot(3,1,1); title('click start and stop of range')
-%         [startRange,~] = ginput();
-%         [stopRange,~] = ginput();
+        %         [startRange,~] = ginput();
+        %         [stopRange,~] = ginput();
         waitforbuttonpress;
-        q = get(ax, 'CurrentPoint');       
+        q = get(ax, 'CurrentPoint');
         myData.params.startRange = q(1,1);
         waitforbuttonpress;
-        q = get(ax, 'CurrentPoint');     
+        q = get(ax, 'CurrentPoint');
         myData.params.stopRange = q(1,1);
         
     case 'c'
-        newC = inputdlg('cluster ID?');        
+        newC = inputdlg('cluster ID?');
         ind = find(myData.clusterIDs==str2num(newC{1}),1);
-        if ~isempty(ind) 
+        if ~isempty(ind)
             myData.params.clusterIndex = ind;
         end
         
@@ -206,5 +206,31 @@ set(f, 'UserData', myData);
 
 % plot with new settings
 psthViewerPlot(f)
+
+end
+
+
+function makepretty()
+% set some graphical attributes of the current axis
+
+set(get(gca, 'XLabel'), 'FontSize', 17);
+set(get(gca, 'YLabel'), 'FontSize', 17);
+set(gca, 'FontSize', 13);
+
+set(get(gca, 'Title'), 'FontSize', 20);
+
+ch = get(gca, 'Children');
+
+for c = 1:length(ch)
+    thisChild = ch(c);
+    if strcmp('line', get(thisChild, 'Type'))
+        if strcmp('.', get(thisChild, 'Marker'))
+            set(thisChild, 'MarkerSize', 15);
+        end
+        if strcmp('-', get(thisChild, 'LineStyle'))
+            set(thisChild, 'LineWidth', 2.0);
+        end
+    end
+end
 
 end
