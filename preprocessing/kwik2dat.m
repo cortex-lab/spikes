@@ -225,7 +225,7 @@ end
 %% Save parameters/header information in separate file
 
 params = {'raw_path',['''' kwik_path '''']; ...
-    'n_channels',num2str(sum(ephys_ch)); ...
+    'n_channels',num2str(length(ephys_ch)); ...
     'sample_rate',num2str(sample_rate); ...
     'gain',num2str(ch_gain); ...
     'lfp_cutoff',num2str(lfp_cutoff)};
@@ -242,9 +242,11 @@ fclose(fid);
 %% If local copy, move local processed to server, delete local data copy
 
 if local_copy    
+    disp('Moving local copy to server...')
     movefile(lfp_save_filename,[save_path filesep 'lfp.dat']);
     movefile(spikes_save_filename,[save_path filesep 'spikes.dat']);
     delete(temp_filename)
+    disp('Done')
 end
 
 
