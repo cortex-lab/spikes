@@ -58,6 +58,10 @@ else
     error('Gains set differently for different channel: no contingency for this in param file yet')
 end
 
+% Location in the H5 file where the recordings are
+locationInKWD = '/recordings/0/data';
+% Load header info
+info = h5info(kwd_filename,locationInKWD);
 
 %% Load in the continuous electrophysiology data and save as .dat
 
@@ -75,11 +79,6 @@ if local_copy
     % set data filename to the local filename
     kwd_filename = temp_filename;
 end
-
-% Location in the H5 file where the recordings are
-locationInKWD = '/recordings/0/data';
-% Load header info
-info = h5info(kwd_filename,locationInKWD);
 
 % Load in each channel separately (because probably too large to load in at
 % once, can be faster if multiple but easier to just to all channels
@@ -208,7 +207,7 @@ switch sync_input
         sync_trace = h5read(kwd_filename, locationInKWD,[recorded_sync_ch,1],[1,Inf]);
 
         % Binarize the sync trace based on half-max
-        sync_trace = sync_trace <= max(sync_trace/2);
+        sync_trace = sync_trace >= max(sync_trace/2);
         
         sync_samplestamp = find((~sync_trace(1:end-1) & sync_trace(2:end)) | ...
             (sync_trace(1:end-1) & ~sync_trace(2:end)));
