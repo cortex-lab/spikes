@@ -156,7 +156,7 @@ for curr_chan_chunk = 1:length(load_chans)
     disp('Subtracting common median and saving spikes')
     dat_car = bsxfun(@minus,curr_dat,int16(median(curr_dat,2)));
     dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
-    fwrite(spikes_fid,curr_dat,'int16');
+    fwrite(spikes_fid,dat_car,'int16');
     %%% Use this stuff later for chunking
     %fseek(spikes_fid,(curr_chan(1)-1)*2,'bof');
     %fwrite(spikes_fid,curr_dat(:,1),'int16');
