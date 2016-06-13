@@ -1,5 +1,5 @@
 
-function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
+function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
 % function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
 %
 % Compute some basic things about spikes and templates
@@ -12,6 +12,7 @@ function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW] = template
 % - templateDepths is the position along the probe of every template
 % - templateAmps is the amplitude of each template
 % - tempsUnW are the unwhitened templates
+% - templateDuration is the trough-to-peak time (in samples)
 %
 % inputs: 
 % - temps, the templates (nTemplates x nTimePoints x nChannels)
@@ -50,3 +51,27 @@ spikeAmps = tempAmps(spikeTemplates+1).*tempScalingAmps;
 
 % Each spike's depth is the depth of its template
 spikeDepths = templateDepths(spikeTemplates+1);
+
+% Get channel with largest amplitude, take that as the waveform
+[~,max_site] = max(max(abs(temps),[],2),[],3);
+templates_max = nan(size(temps,1),size(temps,2));
+for curr_template = 1:size(temps,1)
+    templates_max(curr_template,:) = ...
+        temps(curr_template,:,max_site(curr_template));
+end
+
+% Get trough-to-peak time for each template
+templates_max_signfix = bsxfun(@times,templates_max, ...
+    sign(abs(min(templates_max,[],2)) - abs(max(templates_max,[],2))));
+
+[~,waveform_trough] = min(templates_max,[],2);
+[~,waveform_peak_rel] = arrayfun(@(x) ...
+    max(templates_max(x,waveform_trough(x):end),[],2), ...
+    transpose(1:size(templates_max,1)));
+waveform_peak = waveform_peak_rel + waveform_trough;
+
+templateDuration = waveform_peak - waveform_trough;
+
+
+
+

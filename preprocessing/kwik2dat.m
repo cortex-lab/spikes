@@ -136,7 +136,7 @@ for curr_chan_chunk = 1:length(load_chans)
     [b, a] = butter(3, lfp_cutoff/sample_rate, 'low');
     lfp_downsamp = (sample_rate/lfp_cutoff)/2;
     % filter by channel individually to avoid increasing data size
-    dat_lfp = zeros(length(curr_chans),floor(n_samples/lfp_downsamp),'int16');
+    dat_lfp = zeros(length(curr_chans),ceil(n_samples/lfp_downsamp),'int16');
     for filt_chan = 1:length(curr_chans)
         curr_lfp = filter(b,a,single(curr_dat(filt_chan,:)'))';
         curr_lfp = curr_lfp(1:lfp_downsamp:end);
