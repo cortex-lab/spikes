@@ -1,6 +1,6 @@
 
 function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
-% function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
+% function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
 %
 % Compute some basic things about spikes and templates
 %
