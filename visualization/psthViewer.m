@@ -35,6 +35,7 @@ myData.trGroups = trGroups(:);
 myData.clusterIDs = unique(clu);
 myData.trGroupLabels = unique(myData.trGroups);
 myData.nGroups = length(myData.trGroupLabels);
+myData.plotAxes = [];
 
 params.colors = copper(myData.nGroups); params.colors = params.colors(:, [3 2 1]);
 
@@ -49,7 +50,7 @@ psthViewerPlot(f)
 end
 
 function psthViewerPlot(f)
-
+fprintf(1,'plot with fig %d\n', get(f,'Number'));
 myData = get(f,'UserData');
 
 % pick the right spikes
@@ -115,8 +116,19 @@ end
 
 
 % Make plots
+
+if isempty(myData.plotAxes)
+    for p = 1:3
+        subplot(3,1,p);
+        myData.plotAxes(p) = gca;
+    end
+    set(f, 'UserData', myData);
+end
+
 colors = myData.params.colors;
-subplot(3,1,1); hold off;
+% subplot(3,1,1); 
+axes(myData.plotAxes(1));
+hold off;
 if myData.params.showAllTraces
     for g = 1:nGroups
         plot(bins, psthSm(g,:), 'Color', colors(g,:), 'LineWidth', 2.0);
@@ -135,7 +147,9 @@ plot(myData.params.startRange*[1 1], yl, 'k--');
 plot(myData.params.stopRange*[1 1], yl, 'k--');
 makepretty;
 
-subplot(3,1,2);
+% subplot(3,1,2);
+axes(myData.plotAxes(2));
+hold off;
 plot(rasterX,rasterY, 'k');
 xlim(myData.params.window);
 ylim([0 length(myData.eventTimes)+1]);
@@ -143,17 +157,27 @@ ylabel('event number');
 xlabel('time (sec)');
 makepretty;
 
-subplot(3,1,3);
+% subplot(3,1,3);
+axes(myData.plotAxes(3));
+hold off;
 errorbar(trGroupLabels, tuningCurve(:,1), tuningCurve(:,2), 'o-');
 xlabel('grouping variable value');
 ylabel('average firing rate (Hz)');
 makepretty;
 
+% drawnow;
+
 end
 
 function psthViewerCallback(f, keydata)
 
+fprintf('callback on %d with source %d\n', f.Number, keydata.Source.Number);
+
+
+updateOtherFigs = false;
+
 myData = get(f, 'UserData');
+myData.params
 
 switch keydata.Key
     case 'rightarrow' % increment cluster index
@@ -162,6 +186,7 @@ switch keydata.Key
         if myData.params.clusterIndex>length(myData.clusterIDs)
             myData.params.clusterIndex=1;
         end
+        updateOtherFigs = true;
         
     case 'leftarrow' % decrement cluster index
         
@@ -169,6 +194,7 @@ switch keydata.Key
         if myData.params.clusterIndex<1
             myData.params.clusterIndex=length(myData.clusterIDs);
         end
+        updateOtherFigs = true;
         
     case 'uparrow' % increase smoothing
         myData.params.smoothSize = myData.params.smoothSize*1.2;
@@ -181,6 +207,7 @@ switch keydata.Key
         
     case 't' % whether to plot the psth trace for each condition or just the overall one
         myData.params.showAllTraces = ~myData.params.showAllTraces;
+        updateOtherFigs = true;
         
     case 'r'
         ax = subplot(3,1,1); title('click start and stop of range')
@@ -200,6 +227,8 @@ switch keydata.Key
             myData.params.clusterIndex = ind;
         end
         
+        updateOtherFigs = true;
+        
 end
 
 set(f, 'UserData', myData);
@@ -207,8 +236,40 @@ set(f, 'UserData', myData);
 % plot with new settings
 psthViewerPlot(f)
 
+if updateOtherFigs && f==keydata.Source.Number && isfield(myData, 'otherFigs')
+    % checking that the current figure matches the source number prevents
+    % doing this when called *not* as the original fig
+    setOtherFigsClusterIndex(myData, myData.params.clusterIndex)
+    plotOtherFigs(f)
 end
 
+end
+
+
+function setOtherFigsClusterIndex(myData, cInd)
+
+for thatFig = myData.otherFigs
+    thatData = get(thatFig, 'UserData');
+    thatData.params.clusterIndex = cInd;
+    set(thatFig, 'UserData', thatData);
+    
+end
+
+end
+
+
+function plotOtherFigs(f)
+myData = get(f, 'UserData');
+for thatFig = myData.otherFigs
+%     thatFigFcn = get(thatFig, 'KeyPressFcn');
+    figs = get(0, 'Children');
+    figNumsCell = get(figs, 'Number');
+    figNums = [figNumsCell{:}];
+    thatFigObj = figs(figNums==thatFig);
+    psthViewerPlot(thatFigObj);
+end
+figure(f) % return focus here
+end
 
 function makepretty()
 % set some graphical attributes of the current axis
