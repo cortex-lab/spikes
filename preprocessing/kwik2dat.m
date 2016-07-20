@@ -1,4 +1,4 @@
-function kwik2dat(kwik_path,save_path,sync_channel,sync_input,local_copy)
+function kwik2dat(kwik_path,save_path,sync_channels,sync_input,local_copy)
 % kwik2dat(kwik_path,save_path,sync_channel,sync_input)
 % IN PROGRESS NOTES: started to set up to load in chunks (by channel for
 % filtering/downsampling LFP, but then this couldn't do CAR...) didn't
@@ -12,7 +12,7 @@ function kwik2dat(kwik_path,save_path,sync_channel,sync_input,local_copy)
 % kwk_path - path with kwik files
 % save_path - path to save the converted data
 %
-% sync_channel - TTL channel with synchronization input to save
+% sync_channels - TTL channels with synchronization input to save
 % (NOTE: input TTL channel as 1-indexed like in GUI, not 0-indexed like in
 % saved data)
 % sync_input - 'ttl' or 'adc', depending on digital/analog in of sync
@@ -188,10 +188,13 @@ switch sync_input
         ttl_sample_rate = double(h5readatt(raw_kwd_filename,kwe_sample_rate_loc,'sample_rate'));
         
         % Save seperately all TTL events that belong to the specified sync channel
-        sync = struct('timestamps',[],'values',[]);
-        sync_events = ttl_channels == (sync_channel-1);
-        sync.timestamps = double(ttl_samplestamp(sync_events))/ttl_sample_rate;
-        sync.values = logical(ttl_values(sync_events));
+        sync = struct('timestamps',cell(size(sync_channels)), ...
+            'values',cell(size(sync_channels)));
+        for curr_sync = 1:length(sync_channels)
+            sync_events = ttl_channels == (sync_channels(curr_sync)-1);
+            sync(curr_sync).timestamps = double(ttl_samplestamp(sync_events))/ttl_sample_rate;
+            sync(curr_sync).values = logical(ttl_values(sync_events));
+        end
         
         sync_save_filename = [save_path filesep 'sync.mat'];
         save(sync_save_filename,'sync');
@@ -199,22 +202,28 @@ switch sync_input
     case 'adc'
         % If sync was recorded through analog input
         
-        % Find the sync ADC channel index
-        recorded_sync_ch = find(cellfun(@(x) strcmp(['ADC' num2str(sync_channel)],x.Attributes.name), ...
-            kwik_settings.SETTINGS.SIGNALCHAIN.PROCESSOR{1}.CHANNEL_INFO.CHANNEL));
+        sync = struct('timestamps',cell(size(sync_channels)), ...
+            'values',cell(size(sync_channels)));
         
-        % Load in the corresponding trace
-        sync_trace = h5read(kwd_filename, locationInKWD,[recorded_sync_ch,1],[1,Inf]);
-
-        % Binarize the sync trace based on half-max
-        sync_trace = sync_trace >= max(sync_trace/2);
-        
-        sync_samplestamp = find((~sync_trace(1:end-1) & sync_trace(2:end)) | ...
-            (sync_trace(1:end-1) & ~sync_trace(2:end)));
-        
-        sync = struct('timestamps',[],'values',[]);
-        sync.timestamps = sync_samplestamp/sample_rate;
-        sync.values = sync_trace(sync_samplestamp);
+        for curr_sync = 1:length(sync_channels)
+            
+            % Find the sync ADC channel index
+            recorded_sync_ch = find(cellfun(@(x) strcmp(['ADC' num2str(sync_channels(curr_sync))],x.Attributes.name), ...
+                kwik_settings.SETTINGS.SIGNALCHAIN.PROCESSOR{1}.CHANNEL_INFO.CHANNEL));
+            
+            % Load in the corresponding trace
+            sync_trace = h5read(kwd_filename, locationInKWD,[recorded_sync_ch,1],[1,Inf]);
+            
+            % Binarize the sync trace based on half-max
+            sync_trace = sync_trace >= max(sync_trace/2);
+            
+            sync_samplestamp = find((~sync_trace(1:end-1) & sync_trace(2:end)) | ...
+                (sync_trace(1:end-1) & ~sync_trace(2:end)))+1;
+            
+            sync(curr_sync).timestamps = sync_samplestamp/sample_rate;
+            sync(curr_sync).values = sync_trace(sync_samplestamp);
+            
+        end
         
         sync_save_filename = [save_path filesep 'sync.mat'];
         save(sync_save_filename,'sync');
