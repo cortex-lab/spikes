@@ -50,7 +50,7 @@ psthViewerPlot(f)
 end
 
 function psthViewerPlot(f)
-fprintf(1,'plot with fig %d\n', get(f,'Number'));
+% fprintf(1,'plot with fig %d\n', get(f,'Number'));
 myData = get(f,'UserData');
 
 % pick the right spikes
@@ -171,13 +171,13 @@ end
 
 function psthViewerCallback(f, keydata)
 
-fprintf('callback on %d with source %d\n', f.Number, keydata.Source.Number);
+% fprintf('callback on %d with source %d\n', f.Number, keydata.Source.Number);
 
 
 updateOtherFigs = false;
 
 myData = get(f, 'UserData');
-myData.params
+% myData.params
 
 switch keydata.Key
     case 'rightarrow' % increment cluster index
