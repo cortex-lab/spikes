@@ -1,6 +1,6 @@
 
-function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
-% function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
+function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration, waveforms] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
+% function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDuration, waveforms] = templatePositionsAmplitudes(temps, winv, ycoords, spikeTemplates, tempScalingAmps)
 %
 % Compute some basic things about spikes and templates
 %
@@ -13,6 +13,7 @@ function [spikeAmps, spikeDepths, templateDepths, tempAmps, tempsUnW, templateDu
 % - templateAmps is the amplitude of each template
 % - tempsUnW are the unwhitened templates
 % - templateDuration is the trough-to-peak time (in samples)
+% - waveforms: returns the waveform from the max-amplitude channel
 %
 % inputs: 
 % - temps, the templates (nTemplates x nTimePoints x nChannels)
@@ -59,6 +60,7 @@ for curr_template = 1:size(temps,1)
     templates_max(curr_template,:) = ...
         temps(curr_template,:,max_site(curr_template));
 end
+waveforms = templates_max;
 
 % Get trough-to-peak time for each template
 templates_max_signfix = bsxfun(@times,templates_max, ...
