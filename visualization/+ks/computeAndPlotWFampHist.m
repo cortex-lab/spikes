@@ -52,13 +52,15 @@ winv = readNPY(fullfile(ksDir, 'whitening_mat_inv.npy'));
 [spikeAmps, spikeDepths, ~, ~, ~] = ...
     templatePositionsAmplitudes(temps, winv, yc, spikeTemplates, tempScalingAmps);
 
+% here, need to scale to uV...
+
 % wf amp plots
 
 if isempty(depthBins)
     depthBins = 0:40:max(yc);
 end
 if isempty(ampBins)
-    ampBins = linspace(0,prctile(spikeAmps,95), 20); % µV?
+    ampBins = linspace(0,prctile(spikeAmps,95), 20);
 end
 
 recordingDur = max(st);
