@@ -64,7 +64,6 @@ nGroups = myData.nGroups;
 inclRange = bins>myData.params.startRange & bins<=myData.params.stopRange;
 spikeCounts = sum(ba(:,inclRange),2)./(myData.params.stopRange-myData.params.startRange);
 
-
 % PSTH smoothing filter
 gw = gausswin(round(myData.params.smoothSize*6),3);
 smWin = gw./sum(gw);
@@ -219,6 +218,11 @@ switch keydata.Key
         waitforbuttonpress;
         q = get(ax, 'CurrentPoint');
         myData.params.stopRange = q(1,1);
+        if myData.params.stopRange<myData.params.startRange
+            tmp = myData.params.startRange;
+            myData.params.startRange = myData.params.stopRange;
+            myData.params.stopRange = tmp;
+        end
         
     case 'c'
         newC = inputdlg('cluster ID?');
