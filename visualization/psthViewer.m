@@ -145,6 +145,7 @@ hold on;
 plot(myData.params.startRange*[1 1], yl, 'k--');
 plot(myData.params.stopRange*[1 1], yl, 'k--');
 makepretty;
+box off;
 
 % subplot(3,1,2);
 axes(myData.plotAxes(2));
@@ -155,6 +156,7 @@ ylim([0 length(myData.eventTimes)+1]);
 ylabel('event number');
 xlabel('time (sec)');
 makepretty;
+box off;
 
 % subplot(3,1,3);
 axes(myData.plotAxes(3));
@@ -163,6 +165,7 @@ errorbar(trGroupLabels, tuningCurve(:,1), tuningCurve(:,2), 'o-');
 xlabel('grouping variable value');
 ylabel('average firing rate (Hz)');
 makepretty;
+box off;
 
 % drawnow;
 

@@ -60,7 +60,14 @@ if exist(fullfile(ksDir, 'cluster_groups.csv'))
         
         
     end
+    
+else
+    clu = spikeTemplates;
+    
+    cids = unique(spikeTemplates);
+    cgs = 3*ones(size(cids));
 end
+    
 
 coords = readNPY(fullfile(ksDir, 'channel_positions.npy'));
 ycoords = coords(:,2); xcoords = coords(:,1);

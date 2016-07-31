@@ -21,6 +21,8 @@ function [rfMap, stats] = sparseNoiseRF(spikeTimes, stimTimes, stimPositions, pa
 % TODO
 % - show some rasters of the peak and of an average site
 % - implement statistical test(s)
+% - make colormap divergent so suppression is clear
+% - show also raw count map even when using model
 
 % default parameters
 p.makePlots = true; 
@@ -159,13 +161,13 @@ if p.makePlots
     end
     
     subplot(3,nCol,1);
-    imagesc(rfMap);
+    imagesc(yPos, xPos, rfMap);
     title(sprintf('map, peakZ = %.2f', stats.peakZscore));
     colormap hot
     
     if p.fit2Dgauss
         subplot(3,nCol,(nCol-1)*2+1)
-        imagesc(rfMap);
+        imagesc(yPos, xPos, rfMap);
         title('map with fit');
         colormap hot
         
