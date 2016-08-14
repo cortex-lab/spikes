@@ -37,4 +37,8 @@ spikeDepths = sum(spikeFeatYcoords.*pcFeat.^2,2)./sum(pcFeat.^2,2);
 
 [spikeAmps, ~, templateYpos, tempAmps, tempsUnW] = ...
     templatePositionsAmplitudes(temps, winv, ycoords, spikeTemps, tempScalingAmps);
-spikeAmps = spikeAmps*0.6/512/500*1e6; % convert to uV
+
+if isfield(sp, 'gain') && ~isempty(sp.gain) % could put this field in your params.py
+    % spikeAmps = spikeAmps*0.6/512/500*1e6; % convert to uV
+    spikeAmps = spikeAmps*sp.gain; % convert to uV
+end
