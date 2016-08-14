@@ -17,10 +17,10 @@ end
 
 % load spike data
 
-Fs = 30000; % should read this from params.py ... need to write that function
+spikeStruct = loadParamsPy(fullfile(pwd, 'params.py'));
 
 ss = readNPY(fullfile(ksDir, 'spike_times.npy'));
-st = double(ss)/Fs;
+st = double(ss)/spikeStruct.sample_rate;
 spikeTemplates = readNPY(fullfile(ksDir, 'spike_templates.npy')); % note: zero-indexed
 
 if exist(fullfile(ksDir, 'spike_clusters.npy'))
@@ -32,8 +32,8 @@ end
 tempScalingAmps = readNPY(fullfile(ksDir, 'amplitudes.npy'));
 
 if params.loadPCs
-    pcFeat = readNPY('pc_features.npy'); % nSpikes x nFeatures x nLocalChannels
-    pcFeatInd = readNPY('pc_feature_ind.npy'); % nTemplates x nLocalChannels
+    pcFeat = readNPY(fullfile(ksDir,'pc_features.npy')); % nSpikes x nFeatures x nLocalChannels
+    pcFeatInd = readNPY(fullfile(ksDir,'pc_feature_ind.npy')); % nTemplates x nLocalChannels
 else
     pcFeat = [];
     pcFeatInd = [];
