@@ -17,7 +17,7 @@ end
 
 % load spike data
 
-spikeStruct = loadParamsPy(fullfile(pwd, 'params.py'));
+spikeStruct = loadParamsPy(fullfile(ksDir, 'params.py'));
 
 ss = readNPY(fullfile(ksDir, 'spike_times.npy'));
 st = double(ss)/spikeStruct.sample_rate;
