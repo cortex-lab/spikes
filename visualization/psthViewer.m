@@ -30,6 +30,12 @@ params.binSize = 0.001;
 
 myData.spikeTimes = spikeTimes;
 myData.clu = clu;
+
+if ~issorted(eventTimes)
+    [eventTimes, ii] = sort(eventTimes);
+    trGroups = trGroups(ii);
+end
+
 myData.eventTimes = eventTimes(:);
 myData.trGroups = trGroups(:);
 myData.clusterIDs = unique(clu);
