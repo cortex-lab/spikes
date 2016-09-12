@@ -1,4 +1,4 @@
-
+ 
 
 
 function medianTrace = applyCARtoDat(filename, nChansTotal, outputDir)
@@ -56,7 +56,7 @@ try
     chunkInd = chunkInd+1;
   end
   
-  save(mdTraceFilename, 'medianTrace');
+  save(mdTraceFilename, 'medianTrace', '-v7.3');
   
 catch me
   
