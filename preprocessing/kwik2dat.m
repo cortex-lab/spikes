@@ -132,6 +132,7 @@ for curr_chan_chunk = 1:length(load_chans)
     
     % 1) LFP (low-pass filtered and downsampled)
     disp('Filtering, downsampling, saving LFP');
+    fprintf('%2d',0);
     lfp_cutoff = 500;
     [b, a] = butter(3, lfp_cutoff/sample_rate, 'low');
     lfp_downsamp = (sample_rate/lfp_cutoff)/2;
@@ -142,6 +143,7 @@ for curr_chan_chunk = 1:length(load_chans)
         curr_lfp = curr_lfp(1:lfp_downsamp:end);
         dat_lfp(filt_chan,:) = int16(curr_lfp);
         clear curr_lfp
+        fprintf('%c%c%2d',8,8,floor(100*filt_chan/length(curr_chans)));
     end
     fwrite(lfp_fid,dat_lfp,'int16');
     
@@ -153,10 +155,15 @@ for curr_chan_chunk = 1:length(load_chans)
     
     % 2) Spikes with median across channels subtracted
     % NOTE: if chunking by channel, can't do this
-    disp('Subtracting common median and saving spikes')
-    dat_car = bsxfun(@minus,curr_dat,int16(median(curr_dat,2)));
-    dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
-    fwrite(spikes_fid,dat_car,'int16');
+    %%%%%%%%%%%%%%%%%% TAKING THIS OUT FOR NOW
+%     disp('Subtracting common median and saving spikes')
+%     curr_dat = bsxfun(@minus,curr_dat,int16(median(curr_dat,2)));
+%     dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
+%     fwrite(spikes_fid,dat_car,'int16');
+    
+    disp('NOT doing common median subtraction')
+    fwrite(spikes_fid,curr_dat,'int16');
+    
     %%% Use this stuff later for chunking
     %fseek(spikes_fid,(curr_chan(1)-1)*2,'bof');
     %fwrite(spikes_fid,curr_dat(:,1),'int16');
