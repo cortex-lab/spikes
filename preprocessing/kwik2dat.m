@@ -154,15 +154,28 @@ for curr_chan_chunk = 1:length(load_chans)
     clear dat_lfp
     
     % 2) Spikes with median across channels subtracted
-    % NOTE: if chunking by channel, can't do this
-    %%%%%%%%%%%%%%%%%% TAKING THIS OUT FOR NOW
-%     disp('Subtracting common median and saving spikes')
-%     curr_dat = bsxfun(@minus,curr_dat,int16(median(curr_dat,2)));
-%     dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
-%     fwrite(spikes_fid,dat_car,'int16');
+    disp('Subtracting common median and saving spikes')
+    fprintf('%2d',0);
     
-    disp('NOT doing common median subtraction')
+    % (do this in chunks: median can destroy memory)
+    max_t = 1e6;
+    n_chunks = ceil(size(curr_dat,2)/max_t);
+    t_chunks = round(linspace(1,size(curr_dat,2),n_chunks+1));
+    for curr_chunk = 1:n_chunks
+        curr_t = t_chunks(curr_chunk):t_chunks(curr_chunk+1);
+        % Get channel offset by median across time
+        curr_chunk_offset = median(curr_dat(:,curr_t),2);
+        % Remove channel offset for chunk
+        curr_dat(:,curr_t) = bsxfun(@minus,curr_dat(:,curr_t),curr_chunk_offset);
+        % Get and remove median across channels
+        curr_chunk_median = median(curr_dat(:,curr_t),1);
+        curr_dat(:,curr_t) = bsxfun(@minus,curr_dat(:,curr_t),curr_chunk_median);
+        % Add back offset so there aren't jumps if median drifts
+        curr_dat(:,curr_t) = bsxfun(@plus,curr_dat(:,curr_t),curr_chunk_offset);
+        fprintf('%c%c%2d',8,8,floor(100*curr_chunk/n_chunks));
+    end
     fwrite(spikes_fid,curr_dat,'int16');
+   
     
     %%% Use this stuff later for chunking
     %fseek(spikes_fid,(curr_chan(1)-1)*2,'bof');
