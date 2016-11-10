@@ -132,6 +132,7 @@ for curr_chan_chunk = 1:length(load_chans)
     
     % 1) LFP (low-pass filtered and downsampled)
     disp('Filtering, downsampling, saving LFP');
+    fprintf('%2d',0);
     lfp_cutoff = 500;
     [b, a] = butter(3, lfp_cutoff/sample_rate, 'low');
     lfp_downsamp = (sample_rate/lfp_cutoff)/2;
@@ -142,6 +143,7 @@ for curr_chan_chunk = 1:length(load_chans)
         curr_lfp = curr_lfp(1:lfp_downsamp:end);
         dat_lfp(filt_chan,:) = int16(curr_lfp);
         clear curr_lfp
+        fprintf('%c%c%2d',8,8,floor(100*filt_chan/length(curr_chans)));
     end
     fwrite(lfp_fid,dat_lfp,'int16');
     
@@ -152,11 +154,29 @@ for curr_chan_chunk = 1:length(load_chans)
     clear dat_lfp
     
     % 2) Spikes with median across channels subtracted
-    % NOTE: if chunking by channel, can't do this
     disp('Subtracting common median and saving spikes')
-    dat_car = bsxfun(@minus,curr_dat,int16(median(curr_dat,2)));
-    dat_car = bsxfun(@minus,dat_car,int16(median(dat_car,1)));
-    fwrite(spikes_fid,dat_car,'int16');
+    fprintf('%2d',0);
+    
+    % (do this in chunks: median can destroy memory)
+    max_t = 1e6;
+    n_chunks = ceil(size(curr_dat,2)/max_t);
+    t_chunks = round(linspace(1,size(curr_dat,2),n_chunks+1));
+    for curr_chunk = 1:n_chunks
+        curr_t = t_chunks(curr_chunk):t_chunks(curr_chunk+1);
+        % Get channel offset by median across time
+        curr_chunk_offset = median(curr_dat(:,curr_t),2);
+        % Remove channel offset for chunk
+        curr_dat(:,curr_t) = bsxfun(@minus,curr_dat(:,curr_t),curr_chunk_offset);
+        % Get and remove median across channels
+        curr_chunk_median = median(curr_dat(:,curr_t),1);
+        curr_dat(:,curr_t) = bsxfun(@minus,curr_dat(:,curr_t),curr_chunk_median);
+        % Add back offset so there aren't jumps if median drifts
+        curr_dat(:,curr_t) = bsxfun(@plus,curr_dat(:,curr_t),curr_chunk_offset);
+        fprintf('%c%c%2d',8,8,floor(100*curr_chunk/n_chunks));
+    end
+    fwrite(spikes_fid,curr_dat,'int16');
+   
+    
     %%% Use this stuff later for chunking
     %fseek(spikes_fid,(curr_chan(1)-1)*2,'bof');
     %fwrite(spikes_fid,curr_dat(:,1),'int16');
