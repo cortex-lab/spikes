@@ -1,7 +1,7 @@
 
 
 function [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikeTimes, eventTimes, window, psthBinSize)
-% function [psth, bins, rasterX, rasterY, spikeCounts] = psthRasterAndCounts(spikeTimes, eventTimes, window)
+% function [psth, bins, rasterX, rasterY, spikeCounts, binnedArray] = psthAndBA(spikeTimes, eventTimes, window, psthBinSize)
 %
 % Fast computation of psth and spike counts in a window relative to some
 % events. Also returns rasters you can plot. 
