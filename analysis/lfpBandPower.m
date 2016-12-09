@@ -1,0 +1,66 @@
+
+
+function [lfpByChannel, allPowerEst, F] = lfpBandPower(lfpFilename, lfpFs, nChansInFile, freqBand)
+% function [lfpByChannel, allPowerEst, F] = lfpBandPower(lfpFilename, lfpFs, nChansInFile, freqBand)
+% Computes the power in a particular band across the recording
+
+if ~iscell(freqBand)
+    freqBand = {freqBand};
+end
+nF = length(freqBand);
+
+nClips = 10;
+clipDur = 10; % seconds
+
+% load nClips one-sec samples
+d = dir(lfpFilename); 
+nSamps = d.bytes/2/nChansInFile;
+sampStarts = round(linspace(lfpFs*10, nSamps, nClips+1)); % skip first 10 secs
+nClipSamps = round(lfpFs*clipDur);
+
+mmf = memmapfile(lfpFilename, 'Format', {'int16', [nChansInFile nSamps], 'x'});
+
+allPowerEstByBand = zeros(nClips, nChansInFile, nF);
+for n = 1:nClips
+    fprintf(1, 'clip%d\n', n);
+    % pull out the data
+    thisDat = double(mmf.Data.x(:, (1:nClipSamps)+sampStarts(n)));
+    
+    % median subtract? 
+%     thisDat = bsxfun(@minus, thisDat, median(thisDat));
+    
+    [Pxx, F] = myTimePowerSpectrumMat(thisDat', lfpFs);
+    
+    if n==1
+        allPowerEst = zeros(nClips, size(Pxx,1), size(Pxx,2));
+    end
+    allPowerEst(n,:,:) = Pxx;
+        
+    for f = 1:length(freqBand)
+        
+        inclF = F>freqBand{f}(1) & F<=freqBand{f}(2);
+        allPowerEstByBand(n,:, f) = mean(Pxx(inclF,:));
+        
+    end
+    % compute power for each channel, each sample
+%     for ch = 1:size(thisDat, 1)
+%         [Pxx, F] = myTimePowerSpectrum(thisDat(ch,:), lfpFs);
+%         if n==1 && ch==1
+%             inclF = F>freqBand(1) & F<=freqBand(2);
+%         end
+%         allPowerEst(n,ch) = mean(Pxx(inclF));
+%     end
+end
+
+lfpByChannel = squeeze(mean(allPowerEstByBand, 1)); % mean across clips
+allPowerEst = squeeze(mean(allPowerEst, 1));
+
+function [Pxx, F] = myTimePowerSpectrum(x, Fs)
+L = length(x);
+NFFT = 2^nextpow2(L);
+[Pxx,F] = pwelch(x,[],[],NFFT,Fs);
+
+function [Pxx, F] = myTimePowerSpectrumMat(x, Fs)
+L = size(x,1);
+NFFT = 2^nextpow2(L);
+[Pxx,F] = pwelch(x,[],[],NFFT,Fs);

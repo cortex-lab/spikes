@@ -63,8 +63,8 @@ end
 waveforms = templates_max;
 
 % Get trough-to-peak time for each template
-templates_max_signfix = bsxfun(@times,templates_max, ...
-    sign(abs(min(templates_max,[],2)) - abs(max(templates_max,[],2))));
+% templates_max_signfix = bsxfun(@times,templates_max, ...
+%     sign(abs(min(templates_max,[],2)) - abs(max(templates_max,[],2))));
 
 [~,waveform_trough] = min(templates_max,[],2);
 [~,waveform_peak_rel] = arrayfun(@(x) ...
