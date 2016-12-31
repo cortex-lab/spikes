@@ -1,0 +1,28 @@
+
+function plotPSTHbyDepth(timeBins, depthBins, allP, eventName, psthType, ax)
+% function plotPSTHbyDepth(timeBins, depthBins, allP, eventName, ax)
+%
+% see matching function "psthByDepth" that generates input for this
+%
+% psthType is 'norm' if you have normalized units, otherwise 
+
+nD = length(depthBins)-1;
+
+if nargin<5
+    ax = gca;
+end
+
+imagesc(timeBins, depthBins(1:end-1), allP);
+set(gca, 'YDir', 'normal');
+hold on;
+plot(zeros(1, nD), depthBins(1:end-1), 'k--', 'LineWidth', 2.0)
+colormap(ax, colormap_BlueWhiteRed)
+%     cx = caxis();
+%     caxis([-max(abs(cx)) max(abs(cx))]);
+caxis([-10 10]);
+xlabel(['time from ' eventName ' (sec)']);
+xlim([min(timeBins) max(timeBins)]);
+box off
+colorbar
+
+

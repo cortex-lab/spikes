@@ -85,20 +85,18 @@ if p.useSVD
     % that neuron either with a positive time course and negative field, or
     % negative time course and positive field. Here I make the decision
     % to go with the former, since I mostly just look at the maps later. So
-    % if the peak point in the model is negative in time but positive in 
-    % space, we will flip it.     
-    %     +time, neg peak = +/-, no flip
-    %     +time, pos peak = +/+, no flip
-    %     -time, neg peak = -/+, flip
-    %     -time, pos peak = -/-, flip
-    % So the result of all this is just that we never want the time course
-    % to have a negative peak.
-    % * What if it has both, at different points in time? 
-    peakTimePoint = find(abs(timeCourse)==max(abs(timeCourse)),1);    
-    ts = sign(timeCourse(peakTimePoint));
-    if ts<0
+    % if the peak point in the model is positive in space but negative in
+    % time, we will flip it. 
+    
+%     +time, neg peak = +/-, no flip
+%     +time, pos peak = +/+, no flip
+%     -time, neg peak = -/+, flip
+%     -time, pos peak = -/-, flip
+    peakSpatialPoint = find(abs(rfMapVec)==max(abs(rfMapVec)),1);
+    peakTimePoint = find(abs(timeCourse)==max(abs(timeCourse)),1);
+    if -min(rfMapVec)>max(rfMapVec) 
         rfMapVec = -rfMapVec;
-        timeCourse = -timeCourse;
+        V = -V;
     end
         
     rfMap = reshape(rfMapVec,nX, nY);
