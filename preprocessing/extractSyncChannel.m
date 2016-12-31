@@ -14,7 +14,7 @@ for d = 1:length(dataFiles)
     
     fprintf(1,' loading %s\n', dataFiles(d).name);
     
-    fid = fopen(dataFiles(d).name, 'r');
+    fid = fopen(fullfile(folder, dataFiles(d).name), 'r');
     
     % skip over the first samples of the other channels
     q = fread(fid, (syncChanIndex-1), 'int16=>int16');
