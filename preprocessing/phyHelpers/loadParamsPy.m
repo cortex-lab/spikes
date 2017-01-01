@@ -5,7 +5,8 @@ function S = loadParamsPy(fn)
 % python code but just a series of assignments, so most of it will run
 % directly in matlab
 %
-% now based on text2struct from James Jun, 2016-12-31
+% now based on text2struct from James Jun, 2016-12-31, modified slightly by
+% N. Steinmetz. 
 
 fid = fopen(fn, 'r');
 mcFileMeta = textscan(fid, '%s%s', 'Delimiter', '=',  'ReturnOnError', false);
