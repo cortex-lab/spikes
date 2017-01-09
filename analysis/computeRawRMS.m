@@ -1,9 +1,8 @@
 
 
 function [rmsPerChannel, madPerChannel] = computeRawRMS(ksDir, gainFactor)
-% function rmsPerChannel = computeRawRMS(ksDir, gain)
-% Estimate is based on median absolute deviation, to get back to MAD divide
-% by 0.6745. 
+% function [rmsPerChannel, madPerChannel] = computeRawRMS(ksDir, gain)
+%  
 % for spikeglx: gainFactor = 0.6/512/gainSetting*1e6;
 
 pars = loadParamsPy(fullfile(ksDir, 'params.py'));
