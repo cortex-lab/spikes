@@ -1,5 +1,7 @@
 
 function writeToParamsPy(filename, fieldName, value)
+% function writeToParamsPy(filename, fieldName, value)
+% write a row in a params.py file. Will append to the end. 
 
 if isstr(value)
     value = ['''' value '''']; % add a single quote on both sides

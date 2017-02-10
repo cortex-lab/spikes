@@ -1,5 +1,5 @@
 
-function plotLFPpower(F, allPowerEst, dispRange, marginalChans, freqBands)
+function f = plotLFPpower(F, allPowerEst, dispRange, marginalChans, freqBands)
 % function plotLFPpower(F, allPowerEst, dispRange, marginalChans, freqBands)
 %
 % Plots LFP power across the probe, depth by frequency, as colormap
@@ -12,7 +12,7 @@ function plotLFPpower(F, allPowerEst, dispRange, marginalChans, freqBands)
 dispF = F>dispRange(1) & F<=dispRange(2);
 nC = size(allPowerEst,1); 
 
-figure;
+f = figure;
 subplot(4,4,[5 6 7 9 10 11 13 14 15]);
 imagesc(F(dispF), (0:nC-1)*10, 10*log10(allPowerEst(:,dispF)));
 xlim(dispRange);

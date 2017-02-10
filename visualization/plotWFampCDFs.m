@@ -1,6 +1,6 @@
 
-function plotWFampCDFs(pdfs, cdfs, ampBins, depthBins)
-figure; 
+function f = plotWFampCDFs(pdfs, cdfs, ampBins, depthBins)
+f = figure; 
 
 depthX = depthBins(1:end-1)+mean(diff(depthBins))/2;
 ampX = ampBins(1:end-1)+mean(diff(ampBins))/2;
