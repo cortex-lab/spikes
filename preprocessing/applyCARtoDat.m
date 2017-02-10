@@ -57,6 +57,8 @@ try
   end
   
   save(mdTraceFilename, 'medianTrace', '-v7.3');
+  fclose(fid);
+  fclose(fidOut);
   
 catch me
   
