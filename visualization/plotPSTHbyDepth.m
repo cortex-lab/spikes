@@ -29,6 +29,10 @@ xlim([min(timeBins) max(timeBins)]);
 ylabel('depth on electrode array (µm)')
 box off
 h = colorbar;
-h.Label.String = 'Firing rate (spikes/sec)';
+if strcmp(psthType, 'norm')
+    h.Label.String = 'Firing rate z-score';
+else
+    h.Label.String = 'Firing rate (spikes/sec)';
+end
 makepretty;
 
