@@ -31,6 +31,8 @@ p.countWindow = [0 0.2];
 p.binSize = 0.01;
 p.fit2Dgauss = false;
 
+stats = [];
+
 fn = fieldnames(p);
 for f = 1:length(fn)
     if isfield(params, fn{f}) && ~isempty(params.(fn{f}))
@@ -49,6 +51,7 @@ if p.useSVD
     timeBins = timeBins(1:end-1)+p.binSize/2;
     nBins = length(timeBins);
     thisRF = zeros(nX, nY, nBins);
+    stats.timeBins = timeBins;
 else
     thisRF = zeros(nX,nY);
 end
@@ -105,6 +108,7 @@ if p.useSVD
     Scalar = S(1,1);
     Model = rfMapVec*timeCourse*Scalar + bsl;
     Residual = allPSTH - Model;
+    stats.timeCourse = timeCourse;
 else
     rfMap = thisRF;
 end
@@ -197,4 +201,3 @@ if p.makePlots
     
 end
 
-stats = [];

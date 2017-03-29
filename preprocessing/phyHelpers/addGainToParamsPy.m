@@ -25,5 +25,5 @@ if ~isfield(p, 'gain')
         fprintf(1, 'did not find meta file at %s\n', metaPath);
     end
 else
-    fprintf(1, 'params.py at %s already has gain field\n', meta);
+%     fprintf(1, 'params.py at %s already has gain field\n', paramsFn);
 end

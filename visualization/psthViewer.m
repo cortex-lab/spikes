@@ -16,7 +16,12 @@ function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 % - don't replot traces just change X,Y data for speed and for keeping zoom
 % levels
 % - indicate on tuning curve which color is which
-% - add ability to switch from graded to distinguishable color scheme
+% - add ability to switch from graded to distinguishable color scheme, also
+% cyclical
+% - add support for a second grouping variable - in that case, should use a
+% different graded color scheme for each, overlay the traces in the tuning
+% curve view, and also provide a 2-d image of tuning curve
+% - add support for plot labels (traces in psth, x-axis in tuning curve)
 
 params.smoothSize = 15; % in msec, stdev of gaussian smoothing filter
 params.clusterIndex = 1;
