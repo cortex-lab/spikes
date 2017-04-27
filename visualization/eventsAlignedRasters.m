@@ -23,13 +23,14 @@ for e = 1:nEv
     end
     
     windowExp = windows{e}+smoothWinStd*5*[-1 1];
-    [ba, bins] = timestampsToBinned(spikeTimes, eventTimes{e}, psthBinSize, windowExp);
+    [ba, bins] = timestampsToBinned(spikeTimes, eventTimes{e}, psthBinSize, windowExp);        
     
     [tr,b] = find(ba);
     [rasterX,yy] = rasterize(bins(b));
     rasterY = yy+reshape(repmat(tr',3,1),1,length(tr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
     
-    plot(rasterX, rasterY, 'k');    
+    plot(rasterX, rasterY, 'k');  
+    ylim([0 nTimes]);
     
     if e==1
         ylabel('event number');
@@ -38,7 +39,7 @@ for e = 1:nEv
     box off;
     
     axFR(e) = subplot(3,nEv,e+2*nEv); hold off;
-    plot(bins, conv(mean(ba)./psthBinSize, smoothWin, 'same'), 'k', 'LineWidth', 2.0); hold on;
+    plot(bins, conv(nanmean(ba(~isnan(eventTimes{e}),:))./psthBinSize, smoothWin, 'same'), 'k', 'LineWidth', 2.0); hold on;
     xlim(windows{e});
     box off;
     if e==1
