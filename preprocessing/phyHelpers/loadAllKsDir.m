@@ -3,7 +3,7 @@ function sp = loadAllKsDir(mouseName, thisDate)
 
 rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
 root = fileparts(rootE);
-ksRoot = fullfile('\\basket.cortexlab.net\data\nick', mouseName, thisDate);
+% ksRoot = fullfile('\\basket.cortexlab.net\data\nick', mouseName, thisDate);
 alignDir = fullfile(root, 'alignments');
 
 % d = dir(fullfile(root, 'ephys*'));
@@ -19,7 +19,8 @@ for q = 1:length(tags)
     
     tag = tags{q};
     
-    ksDir = fullfile(ksRoot, ['ephys_' tag]);
+%     ksDir = fullfile(ksRoot, ['ephys_' tag]);
+    ksDir = getKSdir(mouseName, thisDate, tag);
     rawDir = fullfile(root, ['ephys_' tag]);
     addGainToParamsPy(ksDir, rawDir)
     

@@ -39,8 +39,15 @@ else
     pcFeatInd = [];
 end
 
+cgsFile = '';
 if exist(fullfile(ksDir, 'cluster_groups.csv')) 
-    [cids, cgs] = readClusterGroupsCSV(fullfile(ksDir, 'cluster_groups.csv'));
+    cgsFile = fullfile(ksDir, 'cluster_groups.csv');
+end
+if exist(fullfile(ksDir, 'cluster_group.tsv')) 
+   cgsFile = fullfile(ksDir, 'cluster_group.tsv');
+end 
+if ~isempty(cgsFile)
+    [cids, cgs] = readClusterGroupsCSV(cgsFile);
 
     if params.excludeNoise
         noiseClusters = cids(cgs==0);
