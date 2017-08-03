@@ -6,7 +6,7 @@
 % - normalization 
 % - implement 'g' for go to specific time
 
-function movieWithTracesSpikes(spikeTimes, spikeClu, traces, auxVid, pars)
+function movieWithTracesSpikes(spikeTimes, spikeClu, traces, auxVid, anatData, pars)
 % function movieWithTracesSpikes(spikeTimes, spikeClu, traces, auxVid, pars)
 % - spikeTimes is nSpikes x 1
 % - spikeClu is nSpikes x 1
@@ -36,7 +36,7 @@ if isempty(pars); pars = struct(); end;
 
 ud.binSpikes = pick(pars, 'binSpikes', 'def', true);
 ud.binSize = pick(pars, 'binSize', 'def', 0.02);
-movieSaveFilePath = pick(pars, 'binSize', 'def', []);
+movieSaveFilePath = pick(pars, 'movieSaveFilePath', 'def', []);
 ud.winSize = pick(pars, 'winSize', 'def', [-5 1]);
 ud.nBinInWin = round(diff(ud.winSize)/ud.binSize);
 startTime = pick(pars, 'startTime', 'def', ud.binSize-ud.winSize(1));
@@ -151,8 +151,9 @@ if ud.playing
 end
 
 if ~ud.figInitialized
-    ax = subtightplot(1,ud.numPanels,1, 0.03, 0.03, 0.03);    
-%     ax = axes();
+%     ax = subtightplot(1,ud.numPanels,1, 0.03, 0.03, 0.03);    
+    ax = axes();
+    set(ax, 'Position', [0.1 0.05 0.6 0.9]);
     ud.ImageAxisHandle = ax;
     %myIm = imagesc(svdFrameReconstruct(allData.U, allData.V(:, ud.currentFrame)));     
     if ud.binSpikes
@@ -164,16 +165,19 @@ if ~ud.figInitialized
         myIm = imagesc(thisT, 1:size(allData.binnedSpikes, 2), allData.binnedSpikes(inclSamps,:)');
     end
         
-    set(ax, 'YDir', 'normal');
+    set(ax, 'YDir', 'normal', 'YTick', []);
     ud.ImageHandle = myIm;
-    caxis(cax);
+    
     if ud.normalize
+        caxis(cax);
         colormap(colormap_BlueWhiteRed);
     else
-        colormap(colormap_blueblackred);
+        g = gray();
+        colormap(g(end:-1:1,:));
+        caxis([0 cax(2)]);
     end
     %colormap parula
-    colorbar    
+%     colorbar    
     set(myIm, 'ButtonDownFcn', @(f,k)movieCallbackClick(f, k, allData, figHandle));
     hold on;
     q = plot(ax, ud.pixel{1}(2), ud.pixel{1}(1), 'ko', 'MarkerFaceColor', pixColors(1,:));
@@ -185,8 +189,13 @@ if ~ud.figInitialized
     % the bottom one?)     
     nSP = length(allData.traces)+1;
     currTime = ud.currentRecTime;    
+    plotHeight = 0.95/nSP;
     for tInd = 1:nSP-1
-        ax = subtightplot(nSP,ud.numPanels,(tInd-1)*ud.numPanels+2, 0.01, 0.01, 0.01);
+        %ax = subtightplot(nSP,ud.numPanels,(tInd-1)*ud.numPanels+2, 0.01, 0.01, 0.01);
+        ax = axes(); 
+        set(ax, 'HitTest', 'off');
+        lowerEdge = 0.01+(tInd-1)*plotHeight; 
+        set(ax, 'Position', [0.1 lowerEdge 0.6 plotHeight]);
         ud.traceAxes(tInd) = ax;
         thisT = allData.traces(tInd).t;
         inclT = find(thisT>currTime+ud.winSize(1),1):find(thisT<currTime+ud.winSize(2),1,'last');
@@ -213,7 +222,10 @@ if ~ud.figInitialized
     end
     
     % one more for the selected pixel
-    ax = subtightplot(nSP,ud.numPanels,(nSP-1)*ud.numPanels+2, 0.01, 0.01, 0.01);
+    %ax = subtightplot(nSP,ud.numPanels,(nSP-1)*ud.numPanels+2, 0.01, 0.01, 0.01);
+    ax = axes();
+    lowerEdge = 0.01+(nSP-1)*plotHeight; 
+    set(ax, 'Position', [0.1 lowerEdge 0.6 plotHeight]);
     ud.traceAxes(nSP) = ax;
     thisT = allData.tInds;
     inclT = find(thisT>currTime+ud.winSize(1),1):find(thisT<currTime+ud.winSize(2),1,'last');
@@ -231,13 +243,41 @@ if ~ud.figInitialized
     % any auxVids
     if ~isempty(allData.auxVid)
         for v = 1:numel(allData.auxVid)
-            ax = subtightplot(1,ud.numPanels,v+2, 0.01, 0.01, 0.01);
+            %ax = subtightplot(1,ud.numPanels,v+2, 0.01, 0.01, 0.01);
+            ax = axes();
+            set(ax, 'Position', [0.75 0.05+(v-1)*0.5 0.2 0.45]);
             allData.auxVid(v).f(ax, currTime, allData.auxVid(v).data);
             title(allData.auxVid(v).name);
             ud.auxAxes(v) = ax;
         end
     end
     
+    % anatomical data
+    if isfield(allData, 'anatData')
+        anatData = allData.anatData;
+        axAnat = axes();
+        set(axAnat, 'Position', [0.03 0.05 0.05 0.9]);
+        
+        wfSize = 0.1*ones(size(anatData.coords(:,1)));
+        hProbeScatter = scatter(anatData.coords(:,1), anatData.coords(:,2), wfSize);
+        hProbeScatter.MarkerFaceColor = 'flat';
+        
+        hold on;
+        for b = 1:size(anatData.borders, 1)
+            plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
+                anatData.borders.upperBorder(b)*[1 1], 'k');
+            plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
+                anatData.borders.lowerBorder(b)*[1 1], 'k');
+            ah = annotation('textbox', 'String', anatData.borders.acronym{b});
+            ah.EdgeColor = 'none';
+            set(ah, 'Parent', axAnat);
+            set(ah, 'Position', [max(anatData.coords(:,1))+10, mean([anatData.borders.lowerBorder(b), anatData.borders.upperBorder(b)]), 0.05, 0.05])
+        end
+        axis(axAnat, 'off')
+        
+        allData.hProbeScatter = hProbeScatter;
+        allData.axAnat = axAnat;
+    end
     
     ud.figInitialized = true;
     set(figHandle, 'UserData', ud);
@@ -338,33 +378,15 @@ if ismember(lower(keydata.Key), {'control', 'alt', 'shift'})
     return;
 end
 
-ax = ud.ImageAxisHandle;
-currentView = get(ax, 'View');
-
-% rotating the view (this property is now obsolete in Matlab, but still
-% works)
-if isequal(keydata.Modifier, {'alt'})
-    switch lower(keydata.Key)
-        case 'rightarrow'
-            newView = currentView + [90 0];
-        case 'leftarrow'
-            newView = currentView + [-90 0];
-        case {'uparrow', 'downarrow'}
-            newView = currentView.*[1 -1];
-        otherwise
-            newView = currentView;
-    end
-    newView(1) = mod(newView(1), 360);
-    set(ax, 'View', newView);
-    return;
-end
-
 ud = get(figHandle, 'UserData');
 switch lower(keydata.Key)
     case 'rightarrow'
-        
+        ud.currentRecTime = ud.currentRecTime+ud.rate;        
     case 'leftarrow'
-        
+        ud.currentRecTime = ud.currentRecTime-ud.rate;
+        if ud.currentRecTime<0.1
+            ud.currentRecTime = 0.1;
+        end
     case 'uparrow'
         ud.rate = ud.rate*1.25;
     case 'downarrow'
