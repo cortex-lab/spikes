@@ -4,7 +4,7 @@ function wf = getWaveForms(gwfparams)
 % Extracts individual spike waveforms from the raw datafile, for multiple
 % clusters. Returns the waveforms and their means within clusters.
 %
-% Contributed by C. Schoonover
+% Contributed by C. Schoonover and A. Fink
 %
 % % INPUT
 % gwfparams.dataDir = '/path/to/data/';                                         % KiloSort/Phy output folder
