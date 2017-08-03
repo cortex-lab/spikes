@@ -1,13 +1,21 @@
 function wf = getWaveForms(gwfparams)
-
+% function wf = getWaveForms(gwfparams)
+%
+% Extracts individual spike waveforms from the raw datafile, for multiple
+% clusters. Returns the waveforms and their means within clusters.
+%
+% Contributed by C. Schoonover
+%
 % % INPUT
 % gwfparams.dataDir = '/path/to/data/';                                         % KiloSort/Phy output folder
 % gwfparams.fileName = 'data.dat';                                              % .dat file containing the raw 
-% gwfparams.dataType = 'int16'; gwfparams.dataTypeNBytes = 2;                   % Data type and number of bytes per sample in .dat file (this should be BP filtered)
+% gwfparams.dataType = 'int16';                                                 % Data type of .dat file (this should be BP filtered)
 % gwfparams.nCh = 32;                                                           % Number of channels that were streamed to disk in .dat file
 % gwfparams.wfWin = [-40 41];                                                   % Number of samples before and after spiketime to include in waveform
 % gwfparams.nWf = 2000;                                                         % Number of waveforms per unit to pull out
 % [gwfparams.spikeClusters, gwfparams.spikeTimes] = phy2mat(gwfparams.dataDir); % Spike times of clusters classified as 'good' in Phy
+%   .spikeClusters and .spikeTimes are vectors of the same length, can be
+%   any set of clusters and associated spike times you wish to use
 %
 % % OUTPUT
 % wf.unitIDs        % Cluster IDs (Phy nomenclature)
@@ -21,7 +29,8 @@ function wf = getWaveForms(gwfparams)
 % Load .dat and KiloSort/Phy output
 fileName = fullfile(gwfparams.dataDir,gwfparams.fileName);             
 filenamestruct = dir(fileName);
-nSamp = filenamestruct.bytes/(gwfparams.nCh*gwfparams.dataTypeNBytes);  % Number of samples per channel
+dataTypeNBytes = numel(typecast(cast(0, type), 'uint8')); % determine number of bytes per sample
+nSamp = filenamestruct.bytes/(gwfparams.nCh*dataTypeNBytes);  % Number of samples per channel
 wfNSamples = length(gwfparams.wfWin(1):gwfparams.wfWin(end));
 mmf = memmapfile(fileName, 'Format', {gwfparams.dataType, [gwfparams.nCh nSamp], 'x'});
 chMap = readNPY([gwfparams.dataDir 'channel_map.npy'])+1;               % Order in which data was streamed to disk; must be 1-indexed for Matlab
