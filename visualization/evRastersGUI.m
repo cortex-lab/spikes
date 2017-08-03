@@ -2,18 +2,43 @@
 
 function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
+%
+% Displays rasters and PSTHs for individual units in the choiceworld task
+%
+% Inputs:
+% - st - vector of spike times
+% - clu - vector of cluster identities
+% - cweA - table of trial labels, containing contrastLeft, contrastRight,
+% choice, and feedback
+% - cwtA - table of times of events in trials, containing stimOn, beeps,
+% and feedbackTime
+% - moveData - a struct with moveOnsets, moveOffsets, moveType
+% - lickTimes - a vector of lick times
+% - anatData - a struct with: 
+%   - coords - [nCh 2] coordinates of sites on the probe
+%   - wfLoc - [nClu nCh] size of the neuron on each channel
+%   - borders - table containing upperBorder, lowerBorder, acronym
+%   - clusterIDs - an ordering of clusterIDs that you like
+%
+% Controls: 
+% - up/down arrows to switch between clusters
+% - left/right arrows to switch between clusters
+% - 'h' to hide/unhide behavioral icons on the rasters
+% - t/r to increase/decrease raster tick sizes
+% - 'c' to go to a particular cluster by number
 
 
+fprintf(1, 'Controls: \n');
+fprintf(1, ' - up/down arrows to switch between clusters\n');
+fprintf(1, ' - left/right arrows to switch between clusters\n');
+fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
+fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
+fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
 
 % to add:
-% - change smoothing window
-% - hide behavioral icons
-% - zero-lines
-% - equalize y-axes
-% - ability to do ordering of the clusters in different ways
+% - jump to cluster, click on probe plot to jump to nearby clusters
 
 % construct figure
-
 f = figure; set(f, 'Color', 'w');
 
 
@@ -26,10 +51,15 @@ pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
 pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
 pars.cluIndex = 1;
+pars.tickSize = 2;
 
 myData.st = st;
 myData.clu = clu;
-myData.clusterIDs = unique(clu);
+if ~isempty(anatData) && isfield(anatData, 'clusterIDs')
+    myData.clusterIDs = anatData.clusterIDs;
+else
+    myData.clusterIDs = unique(clu);
+end
 myData.cweA = cweA;
 myData.cwtA = cwtA;
 myData.moveOnsets = moveData.moveOnsets(:);
@@ -57,19 +87,29 @@ set(f, 'KeyPressFcn', @(f,k)kpCallback(f, k));
 function kpCallback(f,keydata)
 myData = get(f, 'UserData');
 switch keydata.Key
-    case 'rightarrow' % increment cluster index
+    case 'uparrow' % increment cluster index
         
         myData.pars.cluIndex = myData.pars.cluIndex+1;
         if myData.pars.cluIndex>length(myData.clusterIDs)
             myData.pars.cluIndex=1;
         end        
         
-    case 'leftarrow' % decrement cluster index
+    case 'downarrow' % decrement cluster index
         
         myData.pars.cluIndex = myData.pars.cluIndex-1;
         if myData.pars.cluIndex<1
             myData.pars.cluIndex=length(myData.clusterIDs);
         end
+        
+    case 'rightarrow' % wider smoothing
+        
+        myData.pars.smoothWinStd = myData.pars.smoothWinStd*5/4;
+        myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
+        
+    case 'leftarrow' % narrower smoothing
+        
+        myData.pars.smoothWinStd = myData.pars.smoothWinStd*4/5;
+        myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
         
     case 'h'
         myData.pars.evsVisible = ~myData.pars.evsVisible;
@@ -83,6 +123,17 @@ switch keydata.Key
             end
         end
         
+    case 't' % bigger raster ticks
+        myData.pars.tickSize = myData.pars.tickSize*2;
+    case 'r' % smaller raster ticks
+        myData.pars.tickSize = myData.pars.tickSize/2;
+        
+    case 'c'
+        newC = inputdlg('cluster ID?');
+        ind = find(myData.clusterIDs==str2num(newC{1}),1);
+        if ~isempty(ind)
+            myData.pars.cluIndex = ind;
+        end    
 end
 
 updatePlots(myData);
@@ -141,23 +192,48 @@ if isfield(myData, 'anatData')
     wfSize = 0.1*ones(size(anatData.coords(:,1))); 
     hProbeScatter = scatter(anatData.coords(:,1), anatData.coords(:,2), wfSize);
     hProbeScatter.MarkerFaceColor = 'flat';
-
+    set(hProbeScatter, 'HitTest', 'off');
+    
     hold on; 
     for b = 1:size(anatData.borders, 1)
-        plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
+        h = plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
             anatData.borders.upperBorder(b)*[1 1], 'k');
-        plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
+        set(h, 'HitTest', 'off');
+        h = plot([min(anatData.coords(:,1)) max(anatData.coords(:,1))], ...
             anatData.borders.lowerBorder(b)*[1 1], 'k');
+        set(h, 'HitTest', 'off');
         ah = annotation('textbox', 'String', anatData.borders.acronym{b});
         ah.EdgeColor = 'none';
         set(ah, 'Parent', axAnat);
         set(ah, 'Position', [max(anatData.coords(:,1))+10, mean([anatData.borders.lowerBorder(b), anatData.borders.upperBorder(b)]), 0.05, 0.05])
-    end
-    axis(axAnat, 'off')
+        set(ah, 'HitTest', 'off');
+    end    
+    %axis(axAnat, 'off')
+    drawnow;
+    axAnat.XRuler.Axle.LineStyle = 'none'; 
+    axAnat.YRuler.Axle.LineStyle = 'none'; 
+    set(axAnat, 'YTick', [], 'XTick', []);
+    set(axAnat, 'ButtonDownFcn', @(q,k)anatClick(q, k, myData.f));
     
     myData.hProbeScatter = hProbeScatter;
     myData.axAnat = axAnat;
 end
+
+function anatClick(q, keydata, f)
+
+clickY = keydata.IntersectionPoint(2);
+myData = get(f, 'UserData');
+
+% find the cluster with the closest position to that click location
+wfLoc = myData.anatData.wfLoc;
+coords = myData.anatData.coords;
+[~, maxChan] = max(wfLoc, [], 2);
+maxY = coords(maxChan,2);
+[~, closestInd] = min(abs(clickY-maxY));
+myData.pars.cluIndex = closestInd;
+updatePlots(myData);
+set(f, 'Name', sprintf('clusterID = %d', myData.clusterIDs(myData.pars.cluIndex)));
+set(f, 'UserData', myData);
 
 function updatePlots(myData)
 % pick spike times and compute the BAs
@@ -175,7 +251,7 @@ for e = 1:length(evData)
     % set the new rasters
     [tr,b] = find(ba);
     [rasterX,yy] = rasterize(bins(b));
-    rasterY = yy+reshape(repmat(tr',3,1),1,length(tr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
+    rasterY = yy*myData.pars.tickSize+reshape(repmat(tr',3,1),1,length(tr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
     set(myData.hRaster(e), 'XData', rasterX, 'YData', rasterY);
     
     % set the new PSTH traces
