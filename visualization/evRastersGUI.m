@@ -35,6 +35,7 @@ fprintf(1, ' - left/right arrows to switch between clusters\n');
 fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
 fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
 fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
+fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
 
 % to add:
 % - jump to cluster, click on probe plot to jump to nearby clusters
