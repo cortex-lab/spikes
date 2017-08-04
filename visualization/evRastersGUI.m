@@ -22,7 +22,7 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 %
 % Controls: 
 % - up/down arrows to switch between clusters
-% - left/right arrows to switch between clusters
+% - left/right arrows to increase/decrease smoothing size
 % - 'h' to hide/unhide behavioral icons on the rasters
 % - t/r to increase/decrease raster tick sizes
 % - 'c' to go to a particular cluster by number
@@ -31,24 +31,22 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 
 fprintf(1, 'Controls: \n');
 fprintf(1, ' - up/down arrows to switch between clusters\n');
-fprintf(1, ' - left/right arrows to switch between clusters\n');
+fprintf(1, ' - left/right arrows to increase/decrease smoothing size\n');
 fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
 fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
 fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
 fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
 
-% to add:
-% - jump to cluster, click on probe plot to jump to nearby clusters
 
 % construct figure
 f = figure; set(f, 'Color', 'w');
 
 
-pars.nTop = 4; % num subplots in the top two rows
-pars.nBottom = 6;
+pars.nTop = 6; % num subplots in the top two rows
+pars.nBottom = 7;
 pars.nVertSp = 6; % the four rows get 2, 1, 2, 1
 pars.psthBinSize = 0.002;
-pars.smoothWinStd = 0.01;
+pars.smoothWinStd = 0.02;
 pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
 pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
@@ -65,6 +63,7 @@ end
 myData.cweA = cweA;
 myData.cwtA = cwtA;
 myData.moveOnsets = moveData.moveOnsets(:);
+myData.moveOffsets = moveData.moveOffsets(:);
 myData.moveType = moveData.moveType(:);
 myData.lickTimes = lickTimes;
 myData.anatData = anatData;
@@ -165,7 +164,8 @@ for e = 1:length(evData)
     plot(axRaster(e), [0 0], [0 numel(evData(e).times)], 'k');
     ylim(axRaster(e), [0 numel(evData(e).times)]);
     xlim(axRaster(e), evData(e).windows);
-    box(axRaster(e), 'off');    
+    box(axRaster(e), 'off');   
+    ylabel(axRaster(e), evData(e).ylab);
 end
 myData.hRaster = hRaster;
 myData.hRasterEvs = hRasterEvs;
@@ -175,13 +175,17 @@ for e = 1:length(evData)
     hold(axPSTH(e), 'on');
     for c = 1:size(evData(e).colors)
         hPSTH{e}(c) = plot(axPSTH(e), evData(e).windows, [0 0], ...
-            'Color', evData(e).colors(c,:), 'LineWidth',2.0);        
+            'Color', evData(e).colors(c,:), 'LineWidth',2.0);    
+        if ~isempty(evData(e).lineType)
+            hPSTH{e}(c).LineStyle = evData(e).lineType{c};
+        end
     end
     xlim(axPSTH(e), evData(e).windows);
     box(axPSTH(e), 'off');
     hold(axPSTH(e), 'on');
     plot(axPSTH(e), [0 0], [0 1000], 'k'); %1000 is supposed to just be bigger than it ever could - axes will rescale from unit to unit
     xlabel(axPSTH(e), sprintf('time from %s (sec)', evData(e).alignName));
+    
 end
 myData.hPSTH = hPSTH;
 myData.axPSTH = axPSTH;
@@ -221,7 +225,7 @@ if isfield(myData, 'anatData')
     myData.axAnat = axAnat;
 end
 
-function anatClick(q, keydata, f)
+function anatClick(~, keydata, f)
 
 clickY = keydata.IntersectionPoint(2);
 myData = get(f, 'UserData');
@@ -317,8 +321,8 @@ end
 function h = addEvents(ax, eventTimes, trOrder, ev, thisWindow)
 % add other events nearby
 hold(ax, 'on');
-nTimes = numel(eventTimes);
 reOrderEvent = eventTimes(trOrder);
+nTimes = numel(reOrderEvent);
 hInd = 1;
 for e = 1:length(ev)
     otherEvent = ev(e).times;
@@ -334,7 +338,7 @@ end
 
 function evData = createEvTimesOrders(myData)
 cweA = myData.cweA; cwtA = myData.cwtA;
-moveOnsets = myData.moveOnsets(:); moveType = myData.moveType(:);
+moveOnsets = myData.moveOnsets(:); moveType = myData.moveType(:); moveOffsets = myData.moveOffsets(:);
 lickTimes = myData.lickTimes;
 
 % trial ordering for top row
@@ -345,6 +349,18 @@ nextMoveTime = arrayfun(@(x)respMoves(find(respMoves>x,1)), stimOn);
 
 n = 0;
 
+% top row, move offset before trial start
+n = n+1;
+prevMoveTime = arrayfun(@(x)moveOffsets(find(moveOffsets<x,1, 'last')), stimOn);
+evData(n).times = prevMoveTime;
+evData(n).trOrders = [1:numel(prevMoveTime)]';
+evData(n).windows = [-0.3 0.7];
+evData(n).groups = ones(size(trOrder));
+evData(n).colors = [0 0 0];
+evData(n).alignName = 'pre-trial move offset';
+evData(n).ylab = 'trial chronologically';
+
+
 % top row, stimulus
 n = n+1;
 evData(n).times = cwtA.stimOn;
@@ -353,6 +369,7 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'stim onset';
+evData(n).ylab = 'trial by (moveOnset-stimOn)';
 
 % top row, first movement
 stimOn = cwtA.stimOn;
@@ -367,6 +384,7 @@ evData(n).windows = [-0.5 0.5];
 evData(n).groups = ones(size(trOrder));
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'first move';
+evData(n).ylab = 'trial by (moveOnset-stimOn)';
 
 % top row, go cue
 n = n+1;
@@ -376,6 +394,7 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'go cue';
+evData(n).ylab = 'trial by (moveOnset-stimOn)';
 
 % top row, feedback
 n = n+1;
@@ -385,6 +404,18 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'feedback';
+evData(n).ylab = 'trial by (moveOnset-stimOn)';
+
+% top row, licks
+lickBoutGap = myData.pars.lickBoutGap; % seconds, if gap is <this then consider it part of the same bout
+n = n+1;
+evData(n).times = myData.lickTimes(diff([0; myData.lickTimes])>lickBoutGap);
+evData(n).trOrders = [1:numel(evData(n).times)]';
+evData(n).windows = [-0.3 0.7];
+evData(n).groups = ones(size(evData(n).trOrders));
+evData(n).colors = [0 0 0];
+evData(n).alignName = 'licks';
+evData(n).ylab = 'licks (chronologically)';
 
 % bottom row: stimulus left
 [sortedContrasts,trOrder] = sortrows([cweA.contrastLeft cweA.contrastRight], [1 2]);
@@ -401,7 +432,8 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = groups;
 visColorsL = copper(4); visColorsL = visColorsL(2:4, [3 1 2]);
 evData(n).colors = [0 0 0; visColorsL];
-evData(n).alignName = 'stim onset';
+evData(n).alignName = 'stim onset LEFT';
+evData(n).ylab = 'trial by stim left contrast';
 
 % bottom row: stimulus right
 [sortedContrasts,trOrder] = sortrows([cweA.contrastLeft cweA.contrastRight], [2 1]);
@@ -417,7 +449,43 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = groups;
 visColorsR = copper(4); visColorsR = visColorsR(2:4, [1 3 2]);
 evData(n).colors = [0 0 0; visColorsR];
-evData(n).alignName = 'stim onset';
+evData(n).alignName = 'stim onset RIGHT';
+evData(n).ylab = 'trial by stim right contrast';
+
+
+% bottom row: equal contrasts, aligned to stim, split by choice
+incl = cweA.contrastLeft==cweA.contrastRight;
+con = cweA.contrastLeft(incl);
+choice = cweA.choice(incl);
+[sortedTr,trOrder] = sortrows([choice con]);
+n = n+1;
+evData(n).times = cwtA.stimOn(incl);
+evData(n).trOrders = trOrder;
+evData(n).windows = [-0.3 0.7];
+evData(n).groups = sortedTr(:,1);
+evData(n).colors = [0 0.5 1; 1 0.5 0; 0 0 0];
+evData(n).alignName = 'stim onset EQ CON';
+evData(n).ylab = 'eq con trial by choice (L, R, nogo)';
+
+% bottom row: equal contrasts, aligned to movement onset, split by choice
+stimOn = cwtA.stimOn;
+endTime = cwtA.feedbackTime;
+nextMoveInd = arrayfun(@(x)find(moveOnsets>x,1), stimOn);
+nextMoveTime = moveOnsets(nextMoveInd);
+nextMoveTime(nextMoveTime>endTime) = NaN;
+nextMoveType = moveType(nextMoveInd); 
+
+incl = cweA.contrastLeft==cweA.contrastRight & ~isnan(nextMoveTime);
+[sortedTr,trOrder] = sort(nextMoveType(incl));
+n = n+1;
+evData(n).times = nextMoveTime(incl);
+evData(n).trOrders = trOrder;
+evData(n).windows = [-0.3 0.7];
+evData(n).groups = sortedTr;
+evData(n).colors = [0 0 0; 0 0.5 1; 1 0.5 0];
+evData(n).alignName = 'move onset EQ CON';
+evData(n).ylab = 'eq con trial by first move type (flinch, L, R)';
+
 
 % bottom row: move onsets
 movesInTrials = logical(WithinRanges(moveOnsets, [cwtA.stimOn cwtA.feedbackTime]));
@@ -431,6 +499,8 @@ evData(n).windows = [-0.5 0.5];
 evData(n).groups = sortedTypes;
 evData(n).colors = [0 0 0; 0 0.5 1; 1 0.5 0];
 evData(n).alignName = 'moves within trial';
+evData(n).ylab = 'trial by move type (flinch, L, R)';
+
 
 % bottom row: go cues
 choice = cweA.choice;
@@ -442,27 +512,25 @@ evData(n).windows = [-0.3 0.7];
 evData(n).groups = sortedChoices;
 evData(n).colors = [0 0.5 1; 1 0.5 0; 0 0 0];
 evData(n).alignName = 'go cue';
+evData(n).ylab = 'trial by choice (L, R, nogo)';
+
 
 % bottom row: rewards
 feedbackType = cweA.feedback;
-[sortedFeedback,trOrder] = sort(feedbackType);
+[sortedFeedback,trOrder] = sortrows([choice feedbackType]);
 n = n+1;
 evData(n).times = cwtA.feedbackTime;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
-evData(n).groups = sortedFeedback;
-evData(n).colors = [1 0.3 0.3; 0 0.8 0.5];
+evData(n).groups = sortedFeedback(:,1).*sortedFeedback(:,2); %this works because feedback is -1 or 1 so these come out uniquely
+% evData(n).colors = [1 0.3 0.3; 0 0.8 0.5];
+evData(n).colors = [0 0 0; 1 0.5 0; 0 0.5 1; 0 0.5 1; 1 0.5 0; 0 0 0];
+evData(n).lineType = {':', ':', ':', '-','-','-'};
 evData(n).alignName = 'feedback';
+evData(n).ylab = 'trial by feedback type (neg, reward)';
 
-% bottom row: licks
-lickBoutGap = myData.pars.lickBoutGap; % seconds, if gap is <this then consider it part of the same bout
-n = n+1;
-evData(n).times = myData.lickTimes(diff([0; myData.lickTimes])>lickBoutGap);
-evData(n).trOrders = [1:numel(evData(n).times)]';
-evData(n).windows = [-0.3 0.7];
-evData(n).groups = ones(size(evData(n).trOrders));
-evData(n).colors = [0 0 0];
-evData(n).alignName = 'licks';
+
+
 
 function ev = createEv(myData)
 cweA = myData.cweA; cwtA = myData.cwtA;
