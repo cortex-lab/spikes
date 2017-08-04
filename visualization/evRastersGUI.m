@@ -26,6 +26,7 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - 'h' to hide/unhide behavioral icons on the rasters
 % - t/r to increase/decrease raster tick sizes
 % - 'c' to go to a particular cluster by number
+% - click on anatomy to jump to cluster nearest there
 
 
 fprintf(1, 'Controls: \n');
@@ -518,7 +519,7 @@ ev(n).icon = rewardIcon;
 ev(n).color = rewardColors(2,:);
 ev(n).times = cwtA.feedbackTime(cweA.feedback==-1);
 
-lickBoutGap = 0.25; % seconds, if gap is <this then consider it part of the same bout
+lickBoutGap = myData.pars.lickBoutGap; % seconds, if gap is <this then consider it part of the same bout
 lickBoutStarts = lickTimes(diff([0; lickTimes])>lickBoutGap);
 n = length(ev)+1;
 ev(n).name = 'lickBout';
