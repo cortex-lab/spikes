@@ -58,6 +58,22 @@ function popRasterViewer(sp, eventData, traces, auxVid, anatData, pars)
 % - add LFP 
 % - add screen rendering
 
+
+fprintf(1, 'Controls:\n');
+fprintf(1, ' - y: choose raster y-axis\n');
+fprintf(1, ' - c: choose raster colorization\n');
+fprintf(1, ' - left/right arrow: move forward/back in time\n');
+fprintf(1, ' - up/down: make time window bigger/smaller\n');
+fprintf(1, ' - click on raster: draw a vertical line\n');
+fprintf(1, ' - click on event name: toggle it on/off\n');
+fprintf(1, ' - click on trace name: select it - click again: turn off\n');
+fprintf(1, ' - i/j/k/l: move selected trace up/down or scale it\n');
+fprintf(1, ' - -/=: make raster ticks shorter/taller\n');
+fprintf(1, ' - t: jump to time\n');
+fprintf(1, ' - m: hide mua (NOT IMPL)\n');
+fprintf(1, ' - s/f: movies play slower or faster\n');
+fprintf(1, ' - p: play/pause movies\n');
+
 for e = 1:length(eventData)
     eventData(e).visible = true;
 end
