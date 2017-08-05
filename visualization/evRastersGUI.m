@@ -51,7 +51,6 @@ pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
 pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
 pars.cluIndex = 1;
-pars.tickSize = 2;
 
 myData.st = st;
 myData.clu = clu;
@@ -62,6 +61,7 @@ else
 end
 myData.cweA = cweA;
 myData.cwtA = cwtA;
+pars.tickSize = ceil(numel(cwtA.stimOn)/300);
 myData.moveOnsets = moveData.moveOnsets(:);
 myData.moveOffsets = moveData.moveOffsets(:);
 myData.moveType = moveData.moveType(:);
@@ -162,7 +162,7 @@ for e = 1:length(evData)
     hold(axRaster(e), 'on');
     hRasterEvs{e} = addEvents(axRaster(e), evData(e).times, evData(e).trOrders, myData.ev, evData(e).windows);       
     plot(axRaster(e), [0 0], [0 numel(evData(e).times)], 'k');
-    ylim(axRaster(e), [0 numel(evData(e).times)]);
+    ylim(axRaster(e), [0 numel(evData(e).times)]+0.5);
     xlim(axRaster(e), evData(e).windows);
     box(axRaster(e), 'off');   
     ylabel(axRaster(e), evData(e).ylab);
@@ -257,7 +257,7 @@ for e = 1:length(evData)
     % set the new rasters
     [tr,b] = find(ba);
     [rasterX,yy] = rasterize(bins(b));
-    rasterY = yy*myData.pars.tickSize+reshape(repmat(tr',3,1),1,length(tr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
+    rasterY = yy*myData.pars.tickSize+reshape(repmat(tr',3,1),1,length(tr)*3)-0.5; % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
     set(myData.hRaster(e), 'XData', rasterX, 'YData', rasterY);
     
     % set the new PSTH traces
@@ -351,6 +351,7 @@ n = 0;
 
 % top row, move offset before trial start
 n = n+1;
+if moveOffsets(1)>stimOn(1); moveOffsets = [0; moveOffsets]; end
 prevMoveTime = arrayfun(@(x)moveOffsets(find(moveOffsets<x,1, 'last')), stimOn);
 evData(n).times = prevMoveTime;
 evData(n).trOrders = [1:numel(prevMoveTime)]';
@@ -480,17 +481,17 @@ incl = cweA.contrastLeft==cweA.contrastRight & ~isnan(nextMoveTime);
 n = n+1;
 evData(n).times = nextMoveTime(incl);
 evData(n).trOrders = trOrder;
-evData(n).windows = [-0.3 0.7];
+evData(n).windows = [-0.5 0.5];
 evData(n).groups = sortedTr;
 evData(n).colors = [0 0 0; 0 0.5 1; 1 0.5 0];
-evData(n).alignName = 'move onset EQ CON';
+evData(n).alignName = 'first move EQ CON';
 evData(n).ylab = 'eq con trial by first move type (flinch, L, R)';
 
 
 % bottom row: move onsets
 movesInTrials = logical(WithinRanges(moveOnsets, [cwtA.stimOn cwtA.feedbackTime]));
-theseMoveTimes = moveOnsets(movesInTrials);
-theseMoveTypes = moveType(movesInTrials);
+theseMoveTimes = moveOnsets(movesInTrials&moveType<3);
+theseMoveTypes = moveType(movesInTrials&moveType<3);
 [sortedTypes,trOrder] = sort(theseMoveTypes);
 n = n+1;
 evData(n).times = theseMoveTimes;
