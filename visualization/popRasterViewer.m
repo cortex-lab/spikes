@@ -21,6 +21,8 @@ function popRasterViewer(sp, eventData, traces, auxVid, anatData, pars)
 %   - st, [nSp 1] spike times
 %   - clu, [nSp 1] cluster labels
 %   - cids, [nClusters 1] vector of the unique cluster numbers
+%   - cgs, [nClusters 1] vector of groups, 1=mua, 2=good, 3=unsorted -
+%   optional, only if you want to hide mua
 %   - yAxOrderings, [nOrderings 1] struct array with:
 %       - name, string
 %       - yPos, [nClusters 1] giving a y-axis position for each cluster
@@ -57,6 +59,7 @@ function popRasterViewer(sp, eventData, traces, auxVid, anatData, pars)
 % - option to drop mua
 % - add LFP 
 % - add screen rendering
+% - use uix panels
 
 
 fprintf(1, 'Controls:\n');
@@ -103,6 +106,7 @@ params.isPlaying = true;
 params.timerPeriod = 1/30;
 params.movieRate = 1; % 1 = realtime
 params.lastRealTime = now;
+params.muaHidden = false;
 
 % re-scale all the y-orderings to be the same so things don't re-scale when
 % the ordering covers a different range
@@ -270,10 +274,17 @@ sp = ud.sp;
 p = ud.params;
 h = ud.hands;
 
-set(h.ColorDisplay, 'String', sprintf('colored by %s', sp.colorings(p.colorInd).name));
-
-for c = 1:length(sp.cids)    
-    set(h.rasterHands(c), 'Color', sp.colorings(p.colorInd).colors(c,:));
+cmap = sp.colorings(p.colorInd).colors;
+if p.muaHidden && isfield(sp, 'cgs')
+    set(h.ColorDisplay, 'String', sprintf('colored by %s (mua off)', sp.colorings(p.colorInd).name));
+    cmap(:,4) = 1;
+    cmap(sp.cgs<2,4) = 0; % full transparency for anything not Good or Unsorted
+else
+    set(h.ColorDisplay, 'String', sprintf('colored by %s', sp.colorings(p.colorInd).name));
+end
+    
+for c = 1:length(sp.cids)     
+    set(h.rasterHands(c), 'Color', cmap(c,:));
 end
 
 function rastClick(keydata, f)
@@ -393,8 +404,10 @@ switch keydata.Key
         p.movieRate = p.movieRate*4/5;
     case 'f'
         p.movieRate = p.movieRate*5/4;
-            
-
+    case 'm'
+        p.muaHidden = ~p.muaHidden;
+        ud.params = p;
+        recolor(ud);
 end
 ud.params = p;
 ud.traces = tr;

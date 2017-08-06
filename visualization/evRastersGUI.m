@@ -19,6 +19,7 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 %   - wfLoc - [nClu nCh] size of the neuron on each channel
 %   - borders - table containing upperBorder, lowerBorder, acronym
 %   - clusterIDs - an ordering of clusterIDs that you like
+%   - waveforms - [nClu nCh nTimepoints] waveforms of the neurons
 %
 % Controls: 
 % - up/down arrows to switch between clusters
@@ -51,6 +52,7 @@ pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
 pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
 pars.cluIndex = 1;
+pars.nWFtoPlot = 24;
 
 myData.st = st;
 myData.clu = clu;
@@ -156,6 +158,15 @@ for colInd = 1:nBottom
     axPSTH(colInd+nTop) = subplot(nVertSp, nBottom, nBottom*5+colInd);
 end
 
+% shift them all to the right just a bit to make space for waveform on the
+% left
+for n = 1:numel(axRaster)
+    p = get(axRaster(n), 'Position'); 
+    set(axRaster(n), 'Position', [p(1)+0.07 p(2) p(3) p(4)]);
+    p = get(axPSTH(n), 'Position'); 
+    set(axPSTH(n), 'Position', [p(1)+0.07 p(2) p(3) p(4)]);
+end
+
 evData = myData.evData;
 for e = 1:length(evData)
     hRaster(e) = plot(axRaster(e), 0, 0, 'k');
@@ -193,7 +204,7 @@ myData.axPSTH = axPSTH;
 if isfield(myData, 'anatData')
     anatData = myData.anatData;
     axAnat = axes(myData.f);
-    set(axAnat, 'Position', [0.03 0.05 0.05 0.9]);
+    set(axAnat, 'Position', [0.01 0.05 0.05 0.9]);
     
     wfSize = 0.1*ones(size(anatData.coords(:,1))); 
     hProbeScatter = scatter(anatData.coords(:,1), anatData.coords(:,2), wfSize);
@@ -223,7 +234,25 @@ if isfield(myData, 'anatData')
     
     myData.hProbeScatter = hProbeScatter;
     myData.axAnat = axAnat;
+    
+    if isfield(anatData, 'waveforms')
+        axWF = axes(myData.f);
+        set(axWF, 'Position', [0.07 0.55 0.1 0.4]);
+        hold(axWF, 'on');
+        for n = 1:myData.pars.nWFtoPlot
+            hWF(n) = plot(axWF, 0, 0, 'k', 'LineWidth', 2.0);
+        end
+        axis(axWF, 'off');
+        myData.hWF = hWF;
+    end
 end
+axACGlin = axes(myData.f);
+set(axACGlin, 'Position', [0.07 0.35 0.1 0.15]);
+axACGlog = axes(myData.f);
+set(axACGlog, 'Position', [0.07 0.1 0.1 0.15]);
+myACG(rand(1,100), axACGlin, axACGlog);
+myData.axACGlin = axACGlin;
+myData.axACGlog = axACGlog;
 
 function anatClick(~, keydata, f)
 
@@ -289,7 +318,37 @@ if isfield(myData, 'hProbeScatter')
     myData.hProbeScatter.SizeData = wfSize;
 end
 
+% new acg
+[xLin, nLin, ~, nLog] = myACG(st,[],[]);
+ch = get(myData.axACGlin, 'Children');
+nLin = nLin(xLin<0.1);
+yyLin = reshape([nLin nLin]', numel(nLin)*2,1);
+set(ch(3), 'YData', yyLin(1:end-1));
+set(ch(1), 'YData', nLog(end)*[1 1]);
+set(ch(2), 'YData', [0 max(yyLin)]);
+if max(yyLin)>0; set(myData.axACGlin, 'YLim', [0 max(yyLin)]); end
 
+ch = get(myData.axACGlog, 'Children');
+yyLog = reshape([nLog nLog]', numel(nLog)*2,1);
+set(ch(3), 'YData', yyLog);
+set(ch(1), 'YData', nLog(end)*[1 1]);
+set(ch(2), 'YData', [0 max(yyLog)]);
+if max(yyLog)>0; set(myData.axACGlog, 'YLim', [0 max(yyLog)]); end
+
+if isfield(myData, 'hWF')
+    % determine nearest channels
+    wfSize = anatData.wfLoc(myData.pars.cluIndex,:);
+    [~,maxCh] = max(wfSize);
+    c = anatData.coords;
+    chDists = ((c(maxCh,1)-c(:,1)).^2+(c(maxCh,2)-c(:,2)).^2).^0.5;
+    [~,nearestCh] = sort(chDists);
+    % update the traces with these wfs
+    thisWF = squeeze(anatData.waveforms(myData.pars.cluIndex,:,:));
+    for n = 1:myData.pars.nWFtoPlot
+        set(myData.hWF(n), 'YData', thisWF(nearestCh(n),:)*75+c(nearestCh(n),2), ...
+            'XData', (0:size(thisWF,2)-1)*0.45+c(nearestCh(n),1));
+    end
+end
 function [ba, bins] = computeBAs(st, myData)
 % compute all the binned arrays of spikes for new spike times
 evData = myData.evData;
