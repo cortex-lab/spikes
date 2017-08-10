@@ -66,6 +66,7 @@ myData.cwtA = cwtA;
 pars.tickSize = ceil(numel(cwtA.stimOn)/300);
 myData.moveOnsets = moveData.moveOnsets(:);
 myData.moveOffsets = moveData.moveOffsets(:);
+moveData.moveType(moveData.moveType==3) = 0; % call the unclassified ones flinches
 myData.moveType = moveData.moveType(:);
 myData.lickTimes = lickTimes;
 myData.anatData = anatData;
@@ -244,15 +245,29 @@ if isfield(myData, 'anatData')
         end
         axis(axWF, 'off');
         myData.hWF = hWF;
+        
+        
+        axWFslice = axes(myData.f);
+        set(axWFslice, 'Position', [0.07 0.40 0.1 0.15]);
+        hSliceIm = imagesc(axWFslice, rand(10));
+        colormap(axWFslice, colormap_BlueWhiteRed); axis(axWFslice, 'off');
+        hold(axWFslice, 'on');
+        set(axWFslice, 'YDir','normal');
+        plot(axWFslice, size(anatData.waveforms,3)*[1 1], [0 1000], 'k');
+        myData.axWFslice = axWFslice;
+        myData.hSliceIm = hSliceIm;
+        
     end
 end
 axACGlin = axes(myData.f);
-set(axACGlin, 'Position', [0.07 0.35 0.1 0.15]);
+set(axACGlin, 'Position', [0.07 0.23 0.1 0.15]);
 axACGlog = axes(myData.f);
-set(axACGlog, 'Position', [0.07 0.1 0.1 0.15]);
+set(axACGlog, 'Position', [0.07 0.04 0.1 0.15]);
 myACG(rand(1,100), axACGlin, axACGlog);
 myData.axACGlin = axACGlin;
 myData.axACGlog = axACGlog;
+
+
 
 function anatClick(~, keydata, f)
 
@@ -348,6 +363,15 @@ if isfield(myData, 'hWF')
         set(myData.hWF(n), 'YData', thisWF(nearestCh(n),:)*75+c(nearestCh(n),2), ...
             'XData', (0:size(thisWF,2)-1)*0.45+c(nearestCh(n),1));
     end
+    
+    % new wf slice
+    wfSlice1 = waveformSpaceTimeSlice(thisWF, c, 19);
+    wfSlice2 = waveformSpaceTimeSlice(thisWF, c, 51);
+    wfSlice = [wfSlice1 wfSlice2];
+    set(myData.hSliceIm, 'CData', wfSlice);
+    xlim(myData.axWFslice,[0 size(wfSlice,2)+1])
+    ylim(myData.axWFslice,[0 size(wfSlice,1)+1])
+    caxis(myData.axWFslice, max(abs(wfSlice(:)))*0.2*[-1 1]);
 end
 function [ba, bins] = computeBAs(st, myData)
 % compute all the binned arrays of spikes for new spike times
