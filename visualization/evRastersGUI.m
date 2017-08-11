@@ -29,6 +29,9 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - 'c' to go to a particular cluster by number
 % - click on anatomy to jump to cluster nearest there
 
+% TODO
+% - bug when only one trial of a condition or no trials (group gets skipped
+% and colors come out wrong?)
 
 fprintf(1, 'Controls: \n');
 fprintf(1, ' - up/down arrows to switch between clusters\n');
@@ -305,16 +308,19 @@ for e = 1:length(evData)
     set(myData.hRaster(e), 'XData', rasterX, 'YData', rasterY);
     
     % set the new PSTH traces
-    gIDs = unique(evData(e).groups); gIDs = gIDs(~isnan(gIDs));
+    %gIDs = unique(evData(e).groups); gIDs = gIDs(~isnan(gIDs));
+    gIDs = evData(e).gIDs;
     for g = 1:length(gIDs)
         inclTrials = ~isnan(evData(e).times)&evData(e).groups==gIDs(g);
-        thisPSTH = conv(nanmean(ba(inclTrials,:))./myData.pars.psthBinSize, myData.pars.smoothWin, 'same');
-        set(myData.hPSTH{e}(g), 'XData', bins, 'YData', thisPSTH);        
-        if max(thisPSTH)>maxyl(2)
-            maxyl(2) = max(thisPSTH);
-        end
-        if min(thisPSTH)<maxyl(1)
-            maxyl(1) = min(thisPSTH);
+        if ~isempty(inclTrials)
+            thisPSTH = conv(nanmean(ba(inclTrials,:),1)./myData.pars.psthBinSize, myData.pars.smoothWin, 'same');
+            set(myData.hPSTH{e}(g), 'XData', bins, 'YData', thisPSTH);
+            if max(thisPSTH)>maxyl(2)
+                maxyl(2) = max(thisPSTH);
+            end
+            if min(thisPSTH)<maxyl(1)
+                maxyl(1) = min(thisPSTH);
+            end
         end
     end    
 end
@@ -440,6 +446,7 @@ evData(n).times = prevMoveTime;
 evData(n).trOrders = [1:numel(prevMoveTime)]';
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'pre-trial move offset';
 evData(n).ylab = 'trial chronologically';
@@ -451,6 +458,7 @@ evData(n).times = cwtA.stimOn;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'stim onset';
 evData(n).ylab = 'trial by (moveOnset-stimOn)';
@@ -466,6 +474,7 @@ evData(n).times = nextMoveTime;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.5 0.5];
 evData(n).groups = ones(size(trOrder));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'first move';
 evData(n).ylab = 'trial by (moveOnset-stimOn)';
@@ -476,6 +485,7 @@ evData(n).times = cwtA.beeps;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'go cue';
 evData(n).ylab = 'trial by (moveOnset-stimOn)';
@@ -486,6 +496,7 @@ evData(n).times = cwtA.feedbackTime;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(trOrder));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'feedback';
 evData(n).ylab = 'trial by (moveOnset-stimOn)';
@@ -497,6 +508,7 @@ evData(n).times = myData.lickTimes(diff([0; myData.lickTimes])>lickBoutGap);
 evData(n).trOrders = [1:numel(evData(n).times)]';
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = ones(size(evData(n).trOrders));
+evData(n).gIDs = 1;
 evData(n).colors = [0 0 0];
 evData(n).alignName = 'licks';
 evData(n).ylab = 'licks (chronologically)';
@@ -514,6 +526,7 @@ evData(n).times = cwtA.stimOn;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = groups;
+evData(n).gIDs = [1 2 3 4];
 visColorsL = copper(4); visColorsL = visColorsL(2:4, [3 1 2]);
 evData(n).colors = [0 0 0; visColorsL];
 evData(n).alignName = 'stim onset LEFT';
@@ -531,6 +544,7 @@ evData(n).times = cwtA.stimOn;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = groups;
+evData(n).gIDs = [1 2 3 4];
 visColorsR = copper(4); visColorsR = visColorsR(2:4, [1 3 2]);
 evData(n).colors = [0 0 0; visColorsR];
 evData(n).alignName = 'stim onset RIGHT';
@@ -547,6 +561,7 @@ evData(n).times = cwtA.stimOn(incl);
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = sortedTr(:,1);
+evData(n).gIDs = [1 2 3];
 evData(n).colors = [0 0.5 1; 1 0.5 0; 0 0 0];
 evData(n).alignName = 'stim onset EQ CON';
 evData(n).ylab = 'eq con trial by choice (L, R, nogo)';
@@ -566,6 +581,7 @@ evData(n).times = nextMoveTime(incl);
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.5 0.5];
 evData(n).groups = sortedTr;
+evData(n).gIDs = [0 1 2];
 evData(n).colors = [0 0 0; 0 0.5 1; 1 0.5 0];
 evData(n).alignName = 'first move EQ CON';
 evData(n).ylab = 'eq con trial by first move type (flinch, L, R)';
@@ -581,6 +597,7 @@ evData(n).times = theseMoveTimes;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.5 0.5];
 evData(n).groups = sortedTypes;
+evData(n).gIDs = [0 1 2];
 evData(n).colors = [0 0 0; 0 0.5 1; 1 0.5 0];
 evData(n).alignName = 'moves within trial';
 evData(n).ylab = 'trial by move type (flinch, L, R)';
@@ -594,6 +611,7 @@ evData(n).times = cwtA.beeps;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = sortedChoices;
+evData(n).gIDs = [1 2 3];
 evData(n).colors = [0 0.5 1; 1 0.5 0; 0 0 0];
 evData(n).alignName = 'go cue';
 evData(n).ylab = 'trial by choice (L, R, nogo)';
@@ -607,6 +625,7 @@ evData(n).times = cwtA.feedbackTime;
 evData(n).trOrders = trOrder;
 evData(n).windows = [-0.3 0.7];
 evData(n).groups = sortedFeedback(:,1).*sortedFeedback(:,2); %this works because feedback is -1 or 1 so these come out uniquely
+evData(n).gIDs = [-3 -2 -1 1 2 3];
 % evData(n).colors = [1 0.3 0.3; 0 0.8 0.5];
 evData(n).colors = [0 0 0; 1 0.5 0; 0 0.5 1; 0 0.5 1; 1 0.5 0; 0 0 0];
 evData(n).lineType = {':', ':', ':', '-','-','-'};

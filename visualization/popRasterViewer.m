@@ -59,7 +59,9 @@ function popRasterViewer(sp, eventData, traces, auxVid, anatData, pars)
 % - option to drop mua
 % - add LFP 
 % - add screen rendering
-% - use uix panels
+% - add ability to do intervals as shaded regions
+% - bug with play/pause button
+% - try plotting all of events and traces always for speed?
 
 
 fprintf(1, 'Controls:\n');
@@ -157,8 +159,8 @@ for c = 1:length(sp.cids)
 end
 box(h.rasterAx, 'off');
 
-for e = 1:length(ed)
-    thisH = plot(0,0,'-', 'Color', ed(e).color);
+for e = 1:length(ed)    
+    thisH = plot(0,0,'-',ed(e).spec{:});
     set(thisH, 'HitTest', 'off');
     h.eventHands(e) = thisH;
 end
@@ -171,25 +173,70 @@ end
 
 h.userLine = plot([0 0], p.posLims, 'w');
 
-h.ColorDisplay = annotation('textbox', [0.75 0.9 0.1 0.1], 'String', '', 'EdgeColor', 'none');
-h.yPosDisplay = annotation('textbox', [0.75 0.85 0.1 0.1], 'String', '', 'EdgeColor', 'none');
+h.ctrlPanel = uix.Panel('Parent', ud.f, 'Title', 'Controls', 'Position', [0.75 0.55 0.24 0.44]);
+vb = uix.VBox('Parent', h.ctrlPanel);
+hb = uix.HBox('Parent', vb);
+h.ColorDisplay = uicontrol('Style', 'text', 'HorizontalAlignment', 'left', ...
+    'String', '','Parent', hb);
+h.yPosDisplay = uicontrol('Style', 'text', 'HorizontalAlignment', 'left', ...
+    'String', '','Parent', hb);
+hb2 = uix.HBox('Parent', vb);
+h.evtsPanel = uix.Panel('Parent', hb2, 'Title', 'Events');
+h.trPanel = uix.Panel('Parent', hb2, 'Title', 'Traces');
+h.intPanel = uix.Panel('Parent', hb2, 'Title', 'Intervals');
+vbe = uix.VBox('Parent', h.evtsPanel);
+vbt = uix.VBox('Parent', h.trPanel);
+vbi = uix.VBox('Parent', h.intPanel);
 
 for e = 1:length(ed)
-    thisH = annotation('textbox', [0.75 0.8-length(tr)*0.05-e*0.05 0.1 0.1], 'String', ['[E] ' ed(e).name]);
+    %thisH = annotation('textbox', [0.75 0.8-length(tr)*0.05-e*0.05 0.1 0.1], 'String', ['[E] ' ed(e).name]);
+    thisH = uicontrol('Style', 'pushbutton', 'HorizontalAlignment', 'left', ...
+    'String', ed(e).name,'Parent', vbe);
     thisH.BackgroundColor = 'k';
     thisH.FontWeight = 'bold';
-    thisH.Color = ed(e).color;
-    set(thisH, 'ButtonDownFcn', @(~,~)toggleEvent(ud.f, e))
+    ii = find(strcmp(ed(e).spec, 'Color'));
+    thisH.ForegroundColor = ed(e).spec{ii+1};
+    set(thisH, 'Callback', @(~,~)toggleEvent(ud.f, e))
+    set(thisH, 'KeyPressFcn', @(a,k)keyboardPressCallback(ud.f,k));
     h.evLeg(e) = thisH;
 end
 
 for t = 1:length(tr)
-    thisH = annotation('textbox', [0.75 0.8-t*0.05 0.1 0.1], 'String', ['[T] ' tr(t).name]);
+    %thisH = annotation('textbox', [0.75 0.8-t*0.05 0.1 0.1], 'String', ['[T] ' tr(t).name]);
+    thisH = uicontrol('Style', 'pushbutton', 'HorizontalAlignment', 'left', ...
+    'String', tr(t).name,'Parent', vbt);
     thisH.BackgroundColor = 'k';
-    thisH.Color = tr(t).color;
-    set(thisH, 'ButtonDownFcn', @(~,~)selectTrace(ud.f, t))
+    thisH.ForegroundColor = tr(t).color;
+    set(thisH, 'Callback', @(~,~)selectTrace(ud.f, t))
+    set(thisH, 'KeyPressFcn', @(a,k)keyboardPressCallback(ud.f,k));
     h.trLeg(t) = thisH;
 end
+vb.Heights = [25 -1];
+
+
+
+% h.ColorDisplay = annotation('textbox', [0.75 0.9 0.1 0.1], 'String', '', 'EdgeColor', 'none');
+% h.yPosDisplay = annotation('textbox', [0.75 0.85 0.1 0.1], 'String', '', 'EdgeColor', 'none');
+% 
+% for e = 1:length(ed)
+%     thisH = annotation('textbox', [0.75 0.8-length(tr)*0.05-e*0.05 0.1 0.1], 'String', ['[E] ' ed(e).name]);
+%     thisH.BackgroundColor = 'k';
+%     thisH.FontWeight = 'bold';
+%     ii = find(strcmp(ed(e).spec, 'Color'));
+%     thisH.Color = ed(e).spec{ii+1};
+%     set(thisH, 'ButtonDownFcn', @(~,~)toggleEvent(ud.f, e))
+%     h.evLeg(e) = thisH;
+% end
+% 
+% for t = 1:length(tr)
+%     thisH = annotation('textbox', [0.75 0.8-t*0.05 0.1 0.1], 'String', ['[T] ' tr(t).name]);
+%     thisH.BackgroundColor = 'k';
+%     thisH.Color = tr(t).color;
+%     set(thisH, 'ButtonDownFcn', @(~,~)selectTrace(ud.f, t))
+%     h.trLeg(t) = thisH;
+% end
+
+
 
 if ~isempty(ud.auxVid)
     for v = 1:numel(ud.auxVid)
@@ -241,7 +288,7 @@ for c = 1:length(sp.cids)
 end
 
 for e = 1:length(ed)
-    if ed(e).visible
+%     if ed(e).visible
         incl = ed(e).times>p.window(1) & ed(e).times<p.window(2);
         if sum(incl)>0
             [xx,yy] = rasterize(ed(e).times(incl));    
@@ -249,19 +296,19 @@ for e = 1:length(ed)
         else
             set(h.eventHands(e), 'XData', [], 'YData', []);
         end
-    else
-        set(h.eventHands(e), 'XData', [], 'YData', []);
-    end
+%     else
+%         set(h.eventHands(e), 'XData', [], 'YData', []);
+%     end
 end
 
 for t = 1:length(tr)
-    if tr(t).visible         
+%     if tr(t).visible         
         incl = tr(t).t>p.window(1) & tr(t).t<p.window(2);
         set(h.traceHands(t), 'XData', tr(t).t(incl), ...
             'YData', tr(t).v(incl)*tr(t).scale*diff(p.posLims)+tr(t).offset*diff(p.posLims));
-    else
-        set(h.traceHands(t), 'XData', [], 'YData', []);
-    end
+%     else
+%         set(h.traceHands(t), 'XData', [], 'YData', []);
+%     end
 end
 
 set(h.yPosDisplay, 'String', sprintf('ordered by %s', sp.yAxOrderings(p.yAxInd).name));
@@ -296,8 +343,10 @@ function selectTrace(f, t)
 ud = get(f, 'UserData');
 p = ud.params;
 tr = ud.traces;
+h = ud.hands;
 if p.selectedTrace == t    
-    tr(t).visible = false;
+%     tr(t).visible = false;
+    set(h.traceHands(t), 'Visible', 'off');
     ud.hands.trLeg(t).FontWeight = 'normal';   
     p.selectedTrace = [];
 else
@@ -306,28 +355,35 @@ else
     end
     ud.hands.trLeg(t).FontWeight = 'bold';
     p.selectedTrace = t; 
-    tr(t).visible = true;
+%     tr(t).visible = true;
+    set(h.traceHands(t), 'Visible', 'on');
 end
 ud.traces = tr;
 ud.params = p;
 set(f, 'UserData', ud);
-updatePlots(ud);
+% updatePlots(ud);
 
 function toggleEvent(f, e)
 ud = get(f, 'UserData');
-p = ud.params;
-ed = ud.eventData;
-if ed(e).visible    
-    ed(e).visible = false;
+% p = ud.params;
+% ed = ud.eventData;
+h = ud.hands;
+% if ed(e).visible  
+if strcmp(get(h.eventHands(e), 'Visible'), 'on')  
+%     ed(e).visible = false;
+%     set(h.eventHands(e), 'XData', [], 'YData', []);
+    set(h.eventHands(e), 'Visible', 'off');
     ud.hands.evLeg(e).FontWeight = 'normal';   
 else
-    ed(e).visible = true;
-    ud.hands.evLeg(e).FontWeight = 'bold';   
+%     ed(e).visible = true;
+    set(h.eventHands(e), 'Visible', 'on');
+    ud.hands.evLeg(e).FontWeight = 'bold';  
+%     ud.eventData = ed;
+%     updatePlots(ud);
 end
-ud.eventData = ed;
-ud.params = p;
-set(f, 'UserData', ud);
-updatePlots(ud);
+% ud.eventData = ed;
+% ud.params = p;
+% set(f, 'UserData', ud);
 
 function keyboardPressCallback(f, keydata)
 
