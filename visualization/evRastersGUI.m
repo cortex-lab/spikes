@@ -30,8 +30,8 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - click on anatomy to jump to cluster nearest there
 
 % TODO
-% - bug when only one trial of a condition or no trials (group gets skipped
-% and colors come out wrong?)
+% - click on stim onset plots to set counting window for contrast resp
+% function
 
 fprintf(1, 'Controls: \n');
 fprintf(1, ' - up/down arrows to switch between clusters\n');
@@ -56,6 +56,7 @@ pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
 pars.cluIndex = 1;
 pars.nWFtoPlot = 24;
+pars.crfWin = [0.025 0.225]; % sec, window around stimOnset to compute contrast response function
 
 myData.st = st;
 myData.clu = clu;
@@ -100,24 +101,28 @@ switch keydata.Key
         if myData.pars.cluIndex>length(myData.clusterIDs)
             myData.pars.cluIndex=1;
         end        
-        
+        updatePlots(myData);
+
     case 'downarrow' % decrement cluster index
         
         myData.pars.cluIndex = myData.pars.cluIndex-1;
         if myData.pars.cluIndex<1
             myData.pars.cluIndex=length(myData.clusterIDs);
         end
-        
+        updatePlots(myData);
+
     case 'rightarrow' % wider smoothing
         
         myData.pars.smoothWinStd = myData.pars.smoothWinStd*5/4;
         myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
-        
+        updatePlots(myData);
+
     case 'leftarrow' % narrower smoothing
         
         myData.pars.smoothWinStd = myData.pars.smoothWinStd*4/5;
         myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
-        
+        updatePlots(myData);
+
     case 'h'
         myData.pars.evsVisible = ~myData.pars.evsVisible;
         for p = 1:numel(myData.hRasterEvs)
@@ -132,8 +137,11 @@ switch keydata.Key
         
     case 't' % bigger raster ticks
         myData.pars.tickSize = myData.pars.tickSize*2;
+        updatePlots(myData);
+
     case 'r' % smaller raster ticks
         myData.pars.tickSize = myData.pars.tickSize/2;
+        updatePlots(myData);
         
     case 'c'
         newC = inputdlg('cluster ID?');
@@ -141,9 +149,11 @@ switch keydata.Key
         if ~isempty(ind)
             myData.pars.cluIndex = ind;
         end    
+        updatePlots(myData);
+
 end
 
-updatePlots(myData);
+% updatePlots(myData);
 set(f, 'Name', sprintf('clusterID = %d', myData.clusterIDs(myData.pars.cluIndex)));
 
 set(f, 'UserData', myData);
@@ -204,6 +214,16 @@ for e = 1:length(evData)
 end
 myData.hPSTH = hPSTH;
 myData.axPSTH = axPSTH;
+
+% contrast response function
+axCRF = axes(myData.f);
+set(axCRF, 'Position', [0.28 0.2 0.05 0.1]);
+imCRF = imagesc(axCRF, rand(4));
+colormap(axCRF, parula);
+axis(axCRF, 'off');
+set(axCRF, 'YDir', 'normal');
+myData.axCRF = axCRF;
+myData.imCRF = imCRF;
 
 if isfield(myData, 'anatData')
     anatData = myData.anatData;
@@ -330,6 +350,23 @@ if maxyl(2)>maxyl(1) % can fail when there were no spikes in any window
     end
 end
 
+% now the contrast response function. Here we're not supposed to know
+% anything about the particulars of the data in ba and evData, but this is
+% a special case I guess. 
+
+ba = allBA{2}; bins = allBins{2}; % stim-aligned
+cR = myData.cweA.contrastRight; cL = myData.cweA.contrastLeft;
+uR = unique(cR); nR = numel(uR);
+uL = unique(cL); nL = numel(uL);
+crf = nan(nR, nL); 
+inclBins = bins>myData.pars.crfWin(1) & bins<myData.pars.crfWin(2);
+for ri = 1:nR
+    for li = 1:nL
+        crf(li,ri) = mean(mean(ba(cR==uR(ri)&cL==uL(li),inclBins)));
+    end
+end
+set(myData.imCRF, 'CData', crf);
+
 if isfield(myData, 'hProbeScatter')
     anatData = myData.anatData;
     minSize = 0.1; maxSize = 30;
@@ -366,7 +403,7 @@ if isfield(myData, 'hWF')
     % update the traces with these wfs
     thisWF = squeeze(anatData.waveforms(myData.pars.cluIndex,:,:));
     for n = 1:myData.pars.nWFtoPlot
-        set(myData.hWF(n), 'YData', thisWF(nearestCh(n),:)*75+c(nearestCh(n),2), ...
+        set(myData.hWF(n), 'YData', thisWF(nearestCh(n),:)*5+c(nearestCh(n),2), ...
             'XData', (0:size(thisWF,2)-1)*0.45+c(nearestCh(n),1));
     end
     

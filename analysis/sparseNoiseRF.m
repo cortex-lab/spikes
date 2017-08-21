@@ -161,14 +161,21 @@ if p.makePlots
         title('response time course')
         xlabel('time')
         
-        subplot(3,nCol,4);
+        ax = subplot(3,nCol,4);
         imagesc(1:size(allPSTH,1), timeBins,  allPSTH');
+%         cax = caxis();
+%         caxis(max(abs(cax))*[-1 1]);
+        colormap(colorcet('L3'));
+%         axis image
         title('all PSTHs, ordered');
         xlabel('space')
         ylabel('time')
         
         subplot(3,nCol,6); 
         imagesc(Residual');
+%         cax = caxis();
+%         caxis(max(abs(cax))*[-1 1]);     
+%         axis image
         title('residual')
         xlabel('space')
         ylabel('time')
@@ -178,8 +185,12 @@ if p.makePlots
     
     subplot(3,nCol,1);
     imagesc(yPos, xPos, rfMap);
+    axis image
     title(sprintf('map, peakZ = %.2f', stats.peakZscore));
-    colormap hot
+    %colormap hot
+%     colormap(colorcet('D9'));
+%     cax = caxis();
+%     caxis(max(abs(cax))*[-1 1]);
     
     if p.fit2Dgauss
         subplot(3,nCol,(nCol-1)*2+1)
