@@ -148,7 +148,9 @@ switch keydata.Key
         ind = find(myData.clusterIDs==str2num(newC{1}),1);
         if ~isempty(ind)
             myData.pars.cluIndex = ind;
-        end    
+        else
+            fprintf(1, 'could not find cluster %d\n', str2num(newC{1}));
+        end
         updatePlots(myData);
 
 end
