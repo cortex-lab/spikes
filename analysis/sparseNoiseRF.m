@@ -61,10 +61,14 @@ end
 for x = 1:nX
     for y = 1:nY
         theseStims = stimPositions(:,1)==xPos(x) & stimPositions(:,2)==yPos(y);
-        if p.useSVD
-            thisRF(x,y,:) = mean(ba(theseStims,:));
+        if sum(theseStims)==0
+            warning('sparseNoiseRF: stimulus at %d, %d was never shown', xPos(x), yPos(y));
         else
-            thisRF(x,y) = mean(spikeCounts(theseStims));
+            if p.useSVD
+                thisRF(x,y,:) = mean(ba(theseStims,:));
+            else
+                thisRF(x,y) = mean(spikeCounts(theseStims));
+            end
         end
     end
 end
