@@ -29,7 +29,7 @@ eMap1 = rot90(eMap1',2);
 eMap2 = eMap1(:,[2 1 4 3]);
 eMap3 = fliplr(eMap1);
 eMap4 = fliplr(eMap2);
-eMap = eMap2;
+eMap = eMap1;
 
 % PLOT DATA FOR THE WHOLE ELECTRODE
 figure('units', 'normalized', 'position', [0.002, .04, 1, .88]);
