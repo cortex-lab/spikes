@@ -5,8 +5,9 @@ function [syncData, detectedFlips, eventTimes] = loadSync(mouseName, thisDate, t
 %
 % load the sync channel data from a phase3 probe recorded with spikeglx
 
-rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
-root = fileparts(rootE);
+% rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
+% root = fileparts(rootE);
+root = getRootDir(mouseName, thisDate);
 
 if nargin>2 && ~isempty(tag)
     dname = ['ephys_' tag];
