@@ -1,8 +1,9 @@
 
 function sp = loadAllKsDir(mouseName, thisDate)
 
-rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
-root = fileparts(rootE);
+% rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
+% root = fileparts(rootE);
+root = getRootDir(mouseName, thisDate);
 % ksRoot = fullfile('\\basket.cortexlab.net\data\nick', mouseName, thisDate);
 alignDir = fullfile(root, 'alignments');
 
