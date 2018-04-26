@@ -17,7 +17,7 @@ if isa(digitalChannel, 'int16')
     digitalChannel = typecast(digitalChannel, 'uint16');
 end
 
-bitRepresentation = de2bi(digitalChannel); % size is nSamples x 16
+bitRepresentation = de2bi(digitalChannel,16); % size is nSamples x 16
 
 for b = 1:16
     db = diff([0;double(bitRepresentation(:,b))]);
