@@ -23,6 +23,16 @@ function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 % curve view, and also provide a 2-d image of tuning curve
 % - add support for plot labels (traces in psth, x-axis in tuning curve)
 
+fprintf(1, 'Controls:\n')
+fprintf(1, '- left/right arrow: select previous/next cluster\n')
+fprintf(1, '- up/down arrow: change smoothing of psth curves\n')
+fprintf(1, '- c: dialog box to pick a new cluster ID number\n')
+fprintf(1, '- t: toggle showing psth traces for each grouping variable or just the\n')
+fprintf(1, 'overall. If showing just overall, raster is sorted chronologically. If\n')
+fprintf(1, 'showing by grouping variable, raster is sorted by that variable.\n')
+fprintf(1, '- r: select a new range within which to count spikes for the tuning curve\n')
+
+
 params.smoothSize = 15; % in msec, stdev of gaussian smoothing filter
 params.clusterIndex = 1;
 params.rasterScale = 6; % height of ticks
