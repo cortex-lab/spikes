@@ -23,3 +23,8 @@ colorbar
 colormap(colormap_greyZero_blackred)
 caxis([0 20]);
 makepretty
+
+ch = get(f, 'Children');
+chTypes = get(ch, 'Type');
+cbar = ch(strcmp(chTypes, 'colorbar'));
+cbar.Label.String = 'firing rate (sp/s)';
