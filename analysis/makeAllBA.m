@@ -22,6 +22,13 @@ g = inds(clu);
 [st,ii] = sort(st);
 g = g(ii);
 
+
+% replace NaN event times with interpolated values so the array is all
+% non-nan and still sorted. then we delete those rows later.
+nanevts = isnan(eventTimes); 
+eventTimes(nanevts) = interp1(find(~nanevts), eventTimes(~nanevts), find(nanevts));
+
+
 [n,~] = histdiffMulti(st, eventTimes, binBorders, g, nC);
 
 outputSize = [numel(bins) numel(eventTimes) nC];
@@ -31,6 +38,9 @@ if numel(n)~=prod(outputSize)
 end
 n = reshape(n, outputSize);
 allba = permute(n, [3 2 1]); % returned order is cluster x evNum x timebins
+
+% remove the nan events
+allba(:,nanevts,:) = NaN;
 
 % ** OLD METHOD, v. slow
 % cIDs = unique(clu);

@@ -17,7 +17,12 @@ if isa(digitalChannel, 'int16')
     digitalChannel = typecast(digitalChannel, 'uint16');
 end
 
-bitRepresentation = de2bi(digitalChannel,16); % size is nSamples x 16
+if exist('de2bi')==0
+    bitRepresentation = arrayfun(@(x)str2double(x), dec2bin(digitalChannel,16));
+else
+    % faster but this is in communication systems toolbox
+    bitRepresentation = de2bi(digitalChannel,16); % size is nSamples x 16
+end
 
 for b = 1:16
     db = diff([0;double(bitRepresentation(:,b))]);
