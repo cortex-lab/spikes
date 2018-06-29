@@ -53,7 +53,7 @@ for curUnitInd=1:numUnits
         tmpWf = mmf.Data.x(1:gwfparams.nCh,spikeTimeKeeps(curUnitInd,curSpikeTime)+gwfparams.wfWin(1):spikeTimeKeeps(curUnitInd,curSpikeTime)+gwfparams.wfWin(end));
         waveForms(curUnitInd,curSpikeTime,:,:) = tmpWf(chMap,:);
     end
-    waveFormsMean(curUnitInd,:,:) = squeeze(nanmean(waveForms(curUnitInd,:,:,:)));
+    waveFormsMean(curUnitInd,:,:) = squeeze(nanmean(waveForms(curUnitInd,:,:,:),2));
     disp(['Completed ' int2str(curUnitInd) ' units of ' int2str(numUnits) '.']);
 end
 
