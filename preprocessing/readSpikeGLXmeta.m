@@ -49,13 +49,23 @@ try
         S.rangeMax = S.imAiRangeMax;
         S.rangeMin = S.imAiRangeMin;
         S.ADC_bits = 10;  %10 bit adc but 16 bit saved
-        vnIMRO = textscan(S.imroTbl, '%d', 'Delimiter', '( ),');
-        vnIMRO = vnIMRO{1};
-        S.auxGain = double(vnIMRO(9)); %hard code for now;
-        S.auxGain_lfp = double(vnIMRO(10)); %hard code for now;
-        S.vcProbe = sprintf('imec3_opt%d', vnIMRO(3));
-        S.nSites = vnIMRO(4);
-        S.viSites = setdiff(1:S.nSites, viRef_imec3); %sites saved
+        
+        
+        % new, for p3b compatibility, in which the format has changed. 
+        imroEntries = regexp(S.imroTbl, '[\(].*?[\)]', 'match');
+        summaryData = str2num(imroEntries{1}(2:end-1));
+        firstChannel = str2num(imroEntries{2}(2:end-1));
+        S.auxGain = firstChannel(4);
+        S.auxGain_lfp = firstChannel(5);
+        S.nSites = summaryData(end);
+        
+%         vnIMRO = textscan(S.imroTbl, '%d', 'Delimiter', '( ),');
+%         vnIMRO = vnIMRO{1};
+%         S.auxGain = double(vnIMRO(9)); %hard code for now;
+%         S.auxGain_lfp = double(vnIMRO(10)); %hard code for now;
+%         S.vcProbe = sprintf('imec3_opt%d', vnIMRO(3));
+%         S.nSites = vnIMRO(4);
+%         S.viSites = setdiff(1:S.nSites, viRef_imec3); %sites saved
         try
             S.S_imec3 = imec3_imroTbl(S);
         catch
