@@ -71,7 +71,6 @@ temps = readNPY(fullfile(ksDir, 'templates.npy'));
 winv = readNPY(fullfile(ksDir, 'whitening_mat_inv.npy'));
 p = loadParamsPy(fullfile(ksDir, 'params.py'));
 
-
 predData = kilosortPredictData(samps, temps, st, stemps, a, winv);
 
 figure; 

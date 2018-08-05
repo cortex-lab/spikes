@@ -30,11 +30,11 @@ classdef KernelModel < handle
         
         function setLambda(obj, lambda)
             % change the normalization value
-                        
-            if isempty(lambda)
+            obj.lambda = lambda;            
+            if isempty(lambda) && ~isempty(obj.A)
                 % remove normalization
                 obj.A = obj.A(1:numel(obj.tN),:);
-            else
+            elseif ~isempty(lambda)
                 % set the normalization                
                 obj.A(numel(obj.tN)+1:numel(obj.tN)+obj.nPred, 1:end-1) = ...
                     diag(lambda*ones(1,obj.nPred));
