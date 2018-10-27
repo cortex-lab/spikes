@@ -18,7 +18,7 @@ imagesc(F(dispF), (0:nC-1)*10, 10*log10(allPowerEst(:,dispF)));
 xlim(dispRange);
 xlabel('frequency (Hz)');
 set(gca, 'YDir', 'normal');
-ylabel('depth on probe (�m)');
+ylabel('depth on probe (µm)');
 % h = colorbar;
 % h.Label.String = 'power (dB)';
 makepretty
