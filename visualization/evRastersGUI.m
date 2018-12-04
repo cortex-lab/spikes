@@ -33,13 +33,13 @@ function f = evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - click on stim onset plots to set counting window for contrast resp
 % function
 
-fprintf(1, 'Controls: \n');
-fprintf(1, ' - up/down arrows to switch between clusters\n');
-fprintf(1, ' - left/right arrows to increase/decrease smoothing size\n');
-fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
-fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
-fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
-fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
+% fprintf(1, 'Controls: \n');
+% fprintf(1, ' - up/down arrows to switch between clusters\n');
+% fprintf(1, ' - left/right arrows to increase/decrease smoothing size\n');
+% fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
+% fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
+% fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
+% fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
 
 
 % construct figure

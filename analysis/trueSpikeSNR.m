@@ -2,6 +2,16 @@
 
 function snr = trueSpikeSNR(datPars, spikeTimes)
 
+% todo: 
+% - dim reduce then reconstruct the waveform with some svd, to avoid
+% getting a false boost from overfitting best would be cross-validating
+% (i.e. for each spike use only the mean determined from the other
+% spikes). Could do this by subtracting the spike off of the mean before
+% projecting, actually.
+% - use conv to go back through the full raw data trace and get the
+% projection, rather than just picking random times. exclude points around
+% the detected spikes but otherwise consider the full distribution. 
+
 %% 1. read the actual spikes in to get the mean and projections onto the
 % mean
 
