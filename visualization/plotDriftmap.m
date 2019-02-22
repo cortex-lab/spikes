@@ -44,6 +44,9 @@ if nargin < 3
   doPlot = false;
 end
 driftEvents = [];
+if isempty(spikeTimes)
+  return % null input ==> nothing to do
+end
 
 D = 2; % um
 bins = min(spikeDepths)-D:D:max(spikeDepths)+D;
