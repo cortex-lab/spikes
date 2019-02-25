@@ -1,17 +1,15 @@
 
 function sp = loadAllKsDir(mouseName, thisDate)
+% function sp = loadAllKsDir(mouseName, thisDate)
+% load all the spikes from a day into one struct, aligning them to each
+% other
 
-rootE = dat.expPath(mouseName, thisDate, 1, 'main', 'master');
-root = fileparts(rootE);
-% ksRoot = fullfile('\\basket.cortexlab.net\data\nick', mouseName, thisDate);
+
+
+root = getRootDir(mouseName, thisDate);
+
 alignDir = fullfile(root, 'alignments');
 
-% d = dir(fullfile(root, 'ephys*'));
-% if numel(d)>1
-%     for q = 1:numel(d)
-%         tags{q} = d(q).name(7:end);
-%     end
-% end
 [tags, hasEphys] = getEphysTags(mouseName, thisDate);
 
 for q = 1:length(tags)

@@ -1,6 +1,6 @@
 
 
-function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
+function f = evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 %
 % Displays rasters and PSTHs for individual units in the choiceworld task
@@ -33,13 +33,13 @@ function evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - click on stim onset plots to set counting window for contrast resp
 % function
 
-fprintf(1, 'Controls: \n');
-fprintf(1, ' - up/down arrows to switch between clusters\n');
-fprintf(1, ' - left/right arrows to increase/decrease smoothing size\n');
-fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
-fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
-fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
-fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
+% fprintf(1, 'Controls: \n');
+% fprintf(1, ' - up/down arrows to switch between clusters\n');
+% fprintf(1, ' - left/right arrows to increase/decrease smoothing size\n');
+% fprintf(1, ' - ''h'' to hide/unhide behavioral icons on the rasters\n');
+% fprintf(1, ' - t/r to increase/decrease raster tick sizes\n');
+% fprintf(1, ' - ''c'' to go to a particular cluster by number\n');
+% fprintf(1, ' - click on anatomy to jump to cluster nearest there\n');
 
 
 % construct figure
@@ -50,8 +50,9 @@ pars.nTop = 6; % num subplots in the top two rows
 pars.nBottom = 7;
 pars.nVertSp = 6; % the four rows get 2, 1, 2, 1
 pars.psthBinSize = 0.002;
-pars.smoothWinStd = 0.02;
-pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
+pars.smoothWinStd = 0.03;
+% pars.smoothWin = myGaussWin(pars.smoothWinStd, 1/pars.psthBinSize);
+pars.smoothWin = createSmWin(pars.smoothWinStd, pars.psthBinSize);
 pars.lickBoutGap = 0.25;
 pars.evsVisible = true;
 pars.cluIndex = 1;
@@ -114,13 +115,15 @@ switch keydata.Key
     case 'rightarrow' % wider smoothing
         
         myData.pars.smoothWinStd = myData.pars.smoothWinStd*5/4;
-        myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
+        %myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
+        myData.pars.smoothWin = createSmWin(myData.pars.smoothWinStd, myData.pars.psthBinSize);
         updatePlots(myData);
 
     case 'leftarrow' % narrower smoothing
         
         myData.pars.smoothWinStd = myData.pars.smoothWinStd*4/5;
-        myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
+        %myData.pars.smoothWin = myGaussWin(myData.pars.smoothWinStd, 1/myData.pars.psthBinSize);     
+        myData.pars.smoothWin = createSmWin(myData.pars.smoothWinStd, myData.pars.psthBinSize);
         updatePlots(myData);
 
     case 'h'
@@ -153,6 +156,8 @@ switch keydata.Key
         end
         updatePlots(myData);
 
+    case 'u'
+        updatePlots(myData);
 end
 
 % updatePlots(myData);
@@ -230,7 +235,7 @@ myData.imCRF = imCRF;
 if isfield(myData, 'anatData')
     anatData = myData.anatData;
     axAnat = axes(myData.f);
-    set(axAnat, 'Position', [0.01 0.05 0.05 0.9]);
+    set(axAnat, 'Position', [0.01 0.05 0.03 0.9]);
     
     wfSize = 0.1*ones(size(anatData.coords(:,1))); 
     hProbeScatter = scatter(anatData.coords(:,1), anatData.coords(:,2), wfSize);
@@ -737,3 +742,9 @@ ev(n).name = 'lickBout';
 ev(n).icon = '.';
 ev(n).color = [1 0 1];
 ev(n).times = lickBoutStarts;
+
+
+function smWin = createSmWin(stdev, psthBinSize)
+smWin = myGaussWin(stdev, 1/psthBinSize);
+smWin(1:round(numel(smWin)/2)) = 0;
+smWin = smWin./sum(smWin);

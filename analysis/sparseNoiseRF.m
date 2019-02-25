@@ -1,6 +1,6 @@
 
 
-function [rfMap, stats, allPSTH] = sparseNoiseRF(spikeTimes, stimTimes, stimPositions, params)
+function [rfMap, stats, allPSTH, spikeCounts] = sparseNoiseRF(spikeTimes, stimTimes, stimPositions, params)
 % function [rfmap, stats] = sparseNoiseRF(spikeTimes, stimTimes, stimPositions, params)
 %
 % Assumes that stimPositions describe a rectangle and are evenly spaced.
