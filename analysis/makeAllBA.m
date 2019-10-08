@@ -26,10 +26,13 @@ g = g(ii);
 % replace NaN event times with interpolated values so the array is all
 % non-nan and still sorted. then we delete those rows later.
 nanevts = isnan(eventTimes); 
-eventTimes(nanevts) = interp1(find(~nanevts), eventTimes(~nanevts), find(nanevts));
+eventTimes(nanevts) = interp1(find(~nanevts), eventTimes(~nanevts), find(nanevts),'linear', 'extrap');
 
-
-[n,~] = histdiffMulti(st, eventTimes, binBorders, g, nC);
+if isempty(st)
+    n = zeros(1, prod([numel(bins) numel(eventTimes) nC]));
+else
+    [n,~] = histdiffMulti(st, eventTimes, binBorders, g, nC);
+end
 
 outputSize = [numel(bins) numel(eventTimes) nC];
 if numel(n)~=prod(outputSize)

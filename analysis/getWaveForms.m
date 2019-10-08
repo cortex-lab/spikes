@@ -28,7 +28,7 @@ function wf = getWaveForms(gwfparams)
 % wf = getWaveForms(gwfparams);
 
 % Load .dat and KiloSort/Phy output
-fileName = fullfile(gwfparams.dataDir,gwfparams.fileName);             
+fileName = fullfile(gwfparams.dataDir,gwfparams.fileName);           
 filenamestruct = dir(fileName);
 dataTypeNBytes = numel(typecast(cast(0, gwfparams.dataType), 'uint8')); % determine number of bytes per sample
 nSamp = filenamestruct.bytes/(gwfparams.nCh*dataTypeNBytes);  % Number of samples per channel
@@ -43,6 +43,7 @@ numUnits = size(unitIDs,1);
 spikeTimeKeeps = nan(numUnits,gwfparams.nWf);
 waveForms = nan(numUnits,gwfparams.nWf,nChInMap,wfNSamples);
 waveFormsMean = nan(numUnits,nChInMap,wfNSamples);
+
 for curUnitInd=1:numUnits
     curUnitID = unitIDs(curUnitInd);
     curSpikeTimes = gwfparams.spikeTimes(gwfparams.spikeClusters==curUnitID);
@@ -56,6 +57,7 @@ for curUnitInd=1:numUnits
     waveFormsMean(curUnitInd,:,:) = squeeze(nanmean(waveForms(curUnitInd,:,:,:),2));
     disp(['Completed ' int2str(curUnitInd) ' units of ' int2str(numUnits) '.']);
 end
+
 
 % Package in wf struct
 wf.unitIDs = unitIDs;

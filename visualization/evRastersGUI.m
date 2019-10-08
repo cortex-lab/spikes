@@ -18,7 +18,8 @@ function f = evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 %   - coords - [nCh 2] coordinates of sites on the probe
 %   - wfLoc - [nClu nCh] size of the neuron on each channel
 %   - borders - table containing upperBorder, lowerBorder, acronym
-%   - clusterIDs - an ordering of clusterIDs that you like
+%   - clusterIDs - an ordering of clusterIDs that you like (wfLoc and
+%   waveforms must be sorted to match this order!!)
 %   - waveforms - [nClu nCh nTimepoints] waveforms of the neurons
 %
 % Controls: 
@@ -28,6 +29,7 @@ function f = evRastersGUI(st, clu, cweA, cwtA, moveData, lickTimes, anatData)
 % - t/r to increase/decrease raster tick sizes
 % - 'c' to go to a particular cluster by number
 % - click on anatomy to jump to cluster nearest there
+% - 'l' to see the legend
 
 % TODO
 % - click on stim onset plots to set counting window for contrast resp
@@ -156,6 +158,17 @@ switch keydata.Key
         end
         updatePlots(myData);
 
+    case 'l'
+        ev = myData.ev;
+        f = figure; f.Name = 'Behavioral Icons legend';
+        f.ToolBar = 'none'; f.MenuBar = 'none';
+        for e = 1:numel(ev)
+            plot(0,0,ev(e).icon, 'Color', ev(e).color); 
+            hold on; 
+        end
+        legend({ev.name});
+        axis off;
+        
     case 'u'
         updatePlots(myData);
 end
