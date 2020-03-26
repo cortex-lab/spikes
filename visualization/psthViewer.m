@@ -35,7 +35,7 @@ fprintf(1, '- r: select a new range within which to count spikes for the tuning 
 
 params.smoothSize = 15; % in msec, stdev of gaussian smoothing filter
 params.clusterIndex = 1;
-params.rasterScale = 6; % height of ticks
+params.rasterScale = 0; % height of ticks
 params.window = window;
 params.showAllTraces = false;
 params.showErrorShading = false;
