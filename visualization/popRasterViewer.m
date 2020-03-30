@@ -1,5 +1,5 @@
 
-function popRasterViewer(sp, eventData, traces, auxVid, anatData, pars)
+function popRasterViewer(sp, eventData, traces, auxVid, pars)
 %
 % Viewer for ephys data collected during the task
 %
@@ -98,14 +98,14 @@ params.currT = startTime;
 params.rasterScale = 1; % height of ticks
 params.window = params.windowSize*0.5*[-1 1]+params.currT;
 params.binSize = 0.002;
-params.playVid = false;
+params.playVid = true;
 params.posLims = [0 numel(sp.cids)];
 params.yAxInd = 1; % which one is currently used
 params.colorInd = 1; 
 params.selectedTrace = 1;
 params.movieT = params.window(1);
 params.isPlaying = true;
-params.timerPeriod = 1/30;
+params.timerPeriod = round(1/30*1000)/1000;
 params.movieRate = 1; % 1 = realtime
 params.lastRealTime = now;
 params.muaHidden = false;
@@ -114,9 +114,13 @@ params.muaHidden = false;
 % the ordering covers a different range
 for y = 1:numel(sp.yAxOrderings)
     yp = sp.yAxOrderings(y).yPos;
+    ylv = sp.yAxOrderings(y).yLabelVal;
     mn = min(yp); mx = max(yp);
-    sp.yAxOrderings(y).yLabels = [mn mx];
+%     sp.yAxOrderings(y).yLabels = [mn mx];
     sp.yAxOrderings(y).yPos = (yp-mn)/mx*diff(params.posLims)+params.posLims(1);
+    sp.yAxOrderings(y).yLabelVal = (ylv-mn)/mx*diff(params.posLims)+params.posLims(1);
+    
+    
 end
 ud.sp = sp;
 ud.params = params;
@@ -142,7 +146,7 @@ set(f, 'CloseRequestFcn', @(s,~)closeFigure(s, myTimer));
 start(myTimer);
 
 function h = createPlots(ud)
-sp = ud.sp;
+sp = ud.sp; st = sp.st; clu = sp.clu;
 ed = ud.eventData;
 tr = ud.traces;
 p = ud.params;
@@ -152,8 +156,14 @@ h.rasterAx = axes('Position', [0.03 0.03 0.7 0.96]);
 set(h.rasterAx, 'Color', 'k');
 set(h.rasterAx, 'ButtonDownFcn', @(~,k)rastClick(k, ud.f));
 hold(h.rasterAx, 'on');
+
 for c = 1:length(sp.cids)
-    thisH = plot(0,0,'w-');
+    thisH = plot(0,0,'w-', 'LineWidth', 1.5);        
+    
+%     varX = ['rasterData' num2str(c) 'X']; varY = ['rasterData' num2str(c) 'Y'];
+%     h.(varX) = 0; h.(varY) = 0; 
+%     set(thisH, 'XDataSource', ['h.' varX], 'YDataSource', ['h.' varY]); 
+    
     set(thisH, 'HitTest', 'off');
     h.rasterHands(c) = thisH;
 end
@@ -245,6 +255,8 @@ if ~isempty(ud.auxVid)
         h.auxAxes(v) = ax;
     end
     h.movieTimeLine = plot(h.rasterAx,[0 0], p.posLims, 'w:');
+else
+    h.movieTimeLine = [];
 end
 
 
@@ -266,8 +278,10 @@ if p.isPlaying
             ud.auxVid(v).f(ax, p.movieT, ud.auxVid(v).data);
         end
     end
-    set(ud.hands.movieTimeLine, 'XData', p.movieT*[1 1]);
-    title(ud.hands.auxAxes(v), sprintf('rate = %.2f', p.movieRate));
+    if ~isempty(ud.hands.movieTimeLine)
+        set(ud.hands.movieTimeLine, 'XData', p.movieT*[1 1]);
+        title(ud.hands.auxAxes(v), sprintf('rate = %.2f', p.movieRate));
+    end
     drawnow;
 end
 
@@ -278,14 +292,19 @@ p = ud.params;
 h = ud.hands;
 ed = ud.eventData;
 tr = ud.traces;
-        
+set(h.rasterAx, 'XLim', p.window, 'YLim', p.posLims)
+
 incl = sp.st>p.window(1) & sp.st<p.window(2);
 st = sp.st(incl); clu = sp.clu(incl);
 for c = 1:length(sp.cids)
     [rasterX,yy] = rasterize(st(clu==sp.cids(c)));
     rasterY = yy*p.rasterScale+sp.yAxOrderings(p.yAxInd).yPos(c); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
     set(h.rasterHands(c), 'XData', rasterX, 'YData', rasterY);
+    
+%     varX = ['rasterData' num2str(c) 'X']; varY = ['rasterData' num2str(c) 'Y'];
+%     h.(varX) = rasterX; h.(varX) = rasterY; 
 end
+% refreshdata(h.rasterAx, 'caller');
 
 for e = 1:length(ed)
 %     if ed(e).visible
@@ -312,8 +331,8 @@ for t = 1:length(tr)
 end
 
 set(h.yPosDisplay, 'String', sprintf('ordered by %s', sp.yAxOrderings(p.yAxInd).name));
+set(h.rasterAx, 'YTickLabel', sp.yAxOrderings(p.yAxInd).yLabel, 'YTick', sp.yAxOrderings(p.yAxInd).yLabelVal); 
 
-set(h.rasterAx, 'XLim', p.window, 'YLim', p.posLims)
 
 function recolor(ud)
 
@@ -423,7 +442,11 @@ switch keydata.Key
     case 'c'
         p.colorInd = p.colorInd+1;
         if p.colorInd>numel(ud.sp.colorings); p.colorInd = 1; end
+        isP = p.isPlaying;
+        p.isPlaying = false; ud.params = p; set(f, 'UserData', ud)
         recolor(ud);
+        p.isPlaying = isP; ud.params = p; set(f, 'UserData', ud);
+
     case 'hyphen'
         p.rasterScale = p.rasterScale/1.5;
     case 'equal'
@@ -465,10 +488,17 @@ switch keydata.Key
         ud.params = p;
         recolor(ud);
 end
-ud.params = p;
 ud.traces = tr;
+
+isP = p.isPlaying; 
+p.isPlaying = false; 
+ud.params = p;
 set(f, 'UserData', ud)
 updatePlots(ud);
+
+p.isPlaying = isP; 
+ud.params = p;
+set(f, 'UserData', ud);
 
 function p = updateWindow(p)
 p.window = p.windowSize*0.5*[-1 1]+p.currT;
