@@ -22,6 +22,11 @@ function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 % different graded color scheme for each, overlay the traces in the tuning
 % curve view, and also provide a 2-d image of tuning curve
 % - add support for plot labels (traces in psth, x-axis in tuning curve)
+% - option to change filter type
+% XX expand calc window to avoid falling off at the edges
+% - option for error bars
+% - fix bug where the raster from the last unit stays when there are no new
+% spikes to plot
 
 fprintf(1, 'Controls:\n')
 fprintf(1, '- left/right arrow: select previous/next cluster\n')
@@ -42,6 +47,8 @@ params.showErrorShading = false;
 params.startRange = window(1);
 params.stopRange = window(2);
 params.binSize = 0.001;
+params.filterType = 1; 
+params.smWin = genSmWin(params);
 
 myData.spikeTimes = spikeTimes;
 myData.clu = clu;
@@ -62,7 +69,8 @@ params.colors = copper(myData.nGroups); params.colors = params.colors(:, [3 2 1]
 
 myData.params = params;
 
-f = figure;
+f = figure; f.Color = 'w';
+set(f, 'Renderer', 'painters')
 
 set(f, 'UserData', myData);
 set(f, 'KeyPressFcn', @(f,k)psthViewerCallback(f, k));
@@ -73,29 +81,32 @@ end
 function psthViewerPlot(f)
 % fprintf(1,'plot with fig %d\n', get(f,'Number'));
 myData = get(f,'UserData');
+p = myData.params;
 
 % pick the right spikes
 st = myData.spikeTimes(myData.clu==myData.clusterIDs(myData.params.clusterIndex));
 
+plotWindow = p.window;
+calcWindow = plotWindow+p.smoothSize*3/1000*[-1 1];
+
 % compute everything
 %[psth, bins, rasterX, rasterY, spikeCounts] = psthRasterAndCounts(st, myData.eventTimes, myData.params.window, 0.001);
-[psth, bins, rasterX, rasterY, spikeCounts, ba] = psthAndBA(st, myData.eventTimes, myData.params.window, myData.params.binSize);
+[psth, bins, rasterX, rasterY, spikeCounts, ba] = psthAndBA(st, myData.eventTimes, calcWindow, p.binSize);
 trGroupLabels = myData.trGroupLabels;
 nGroups = myData.nGroups;
-inclRange = bins>myData.params.startRange & bins<=myData.params.stopRange;
-spikeCounts = sum(ba(:,inclRange),2)./(myData.params.stopRange-myData.params.startRange);
+inclRange = bins>p.startRange & bins<=p.stopRange;
+spikeCounts = sum(ba(:,inclRange),2)./(p.stopRange-p.startRange);
 
 % PSTH smoothing filter
-gw = gausswin(round(myData.params.smoothSize*6),3);
-smWin = gw./sum(gw);
+smWin = p.smWin; 
 
 % smooth ba
-baSm = conv2(smWin,1,ba', 'same')'./myData.params.binSize;
+baSm = conv2(smWin,1,ba', 'same')'./p.binSize;
 
 % construct psth(s) and smooth it
-if myData.params.showAllTraces
+if p.showAllTraces
     psthSm = zeros(nGroups, numel(bins));
-    if myData.params.showErrorShading
+    if p.showErrorShading
         stderr = zeros(nGroups, numel(bins));
     end
     for g = 1:nGroups
@@ -107,7 +118,7 @@ if myData.params.showAllTraces
 else
     
     psthSm = mean(baSm);
-    if myData.params.showErrorShading
+    if p.showErrorShading
         stderr = std(baSm)./sqrt(size(baSm,1));
     end
     
@@ -138,9 +149,9 @@ end
 % Make plots
 
 if isempty(myData.plotAxes)
-    for p = 1:3
-        subplot(3,1,p);
-        myData.plotAxes(p) = gca;
+    for pidx = 1:3
+        subplot(3,1,pidx);
+        myData.plotAxes(pidx) = gca;
     end
     set(f, 'UserData', myData);
 end
@@ -149,7 +160,7 @@ colors = myData.params.colors;
 % subplot(3,1,1); 
 axes(myData.plotAxes(1));
 hold off;
-if myData.params.showAllTraces
+if p.showAllTraces
     for g = 1:nGroups
         plot(bins, psthSm(g,:), 'Color', colors(g,:), 'LineWidth', 2.0);
         hold on;
@@ -157,14 +168,14 @@ if myData.params.showAllTraces
 else
     plot(bins, psthSm);
 end
-xlim(myData.params.window);
-title(['cluster ' num2str(myData.clusterIDs(myData.params.clusterIndex))]);
-xlabel('time (sec)');
-ylabel('firing rate (Hz)');
+xlim(plotWindow);
+title(['Cluster ' num2str(myData.clusterIDs(p.clusterIndex))]);
+xlabel('Time (s)');
+ylabel('Firing rate (sp/s)');
 yl = ylim();
 hold on;
-plot(myData.params.startRange*[1 1], yl, 'k--');
-plot(myData.params.stopRange*[1 1], yl, 'k--');
+plot(p.startRange*[1 1], yl, 'k--');
+plot(p.stopRange*[1 1], yl, 'k--');
 makepretty;
 box off;
 
@@ -197,40 +208,46 @@ function psthViewerCallback(f, keydata)
 % fprintf('callback on %d with source %d\n', f.Number, keydata.Source.Number);
 
 
-updateOtherFigs = false;
 
 myData = get(f, 'UserData');
-% myData.params
+p = myData.params;
 
 switch keydata.Key
     case 'rightarrow' % increment cluster index
         
-        myData.params.clusterIndex = myData.params.clusterIndex+1;
-        if myData.params.clusterIndex>length(myData.clusterIDs)
-            myData.params.clusterIndex=1;
+        p.clusterIndex = p.clusterIndex+1;
+        if p.clusterIndex>length(myData.clusterIDs)
+            p.clusterIndex=1;
         end
-        updateOtherFigs = true;
         
     case 'leftarrow' % decrement cluster index
         
-        myData.params.clusterIndex = myData.params.clusterIndex-1;
-        if myData.params.clusterIndex<1
-            myData.params.clusterIndex=length(myData.clusterIDs);
+        p.clusterIndex = p.clusterIndex-1;
+        if p.clusterIndex<1
+            p.clusterIndex=length(myData.clusterIDs);
         end
-        updateOtherFigs = true;
         
     case 'uparrow' % increase smoothing
-        myData.params.smoothSize = myData.params.smoothSize*1.2;
+        p.smoothSize = p.smoothSize*1.2;
+        p.smWin = genSmWin(p);
         
     case 'downarrow' % decrease smoothing
-        myData.params.smoothSize = myData.params.smoothSize/1.2;
+        p.smoothSize = p.smoothSize/1.2;
+        p.smWin = genSmWin(p);
+    
+    case 'f'        
+        p.filterType = p.filterType+1;
+        if p.filterType>3; p.filterType = 1; end
+        
+        p.smWin = genSmWin(p);
         
     case 'e' % whether to show standard error as shading
-        myData.params.showErrorShading = ~myData.params.showErrorShading;
+        p.showErrorShading = ~p.showErrorShading;
         
     case 't' % whether to plot the psth trace for each condition or just the overall one
-        myData.params.showAllTraces = ~myData.params.showAllTraces;
-        updateOtherFigs = true;
+        p.showAllTraces = ~p.showAllTraces;
+        
+                    
         
     case 'r'
         ax = subplot(3,1,1); title('click start and stop of range')
@@ -238,65 +255,53 @@ switch keydata.Key
         %         [stopRange,~] = ginput();
         waitforbuttonpress;
         q = get(ax, 'CurrentPoint');
-        myData.params.startRange = q(1,1);
+        p.startRange = q(1,1);
         waitforbuttonpress;
         q = get(ax, 'CurrentPoint');
-        myData.params.stopRange = q(1,1);
-        if myData.params.stopRange<myData.params.startRange
-            tmp = myData.params.startRange;
-            myData.params.startRange = myData.params.stopRange;
-            myData.params.stopRange = tmp;
+        p.stopRange = q(1,1);
+        if p.stopRange<p.startRange
+            tmp = p.startRange;
+            p.startRange = p.stopRange;
+            p.stopRange = tmp;
         end
         
     case 'c'
         newC = inputdlg('cluster ID?');
         ind = find(myData.clusterIDs==str2num(newC{1}),1);
         if ~isempty(ind)
-            myData.params.clusterIndex = ind;
+            p.clusterIndex = ind;
         end
         
-        updateOtherFigs = true;
         
 end
 
+myData.params = p;
 set(f, 'UserData', myData);
 
 % plot with new settings
 psthViewerPlot(f)
 
-if updateOtherFigs && f==keydata.Source.Number && isfield(myData, 'otherFigs')
-    % checking that the current figure matches the source number prevents
-    % doing this when called *not* as the original fig
-    setOtherFigsClusterIndex(myData, myData.params.clusterIndex)
-    plotOtherFigs(f)
-end
 
 end
 
 
-function setOtherFigsClusterIndex(myData, cInd)
 
-for thatFig = myData.otherFigs
-    thatData = get(thatFig, 'UserData');
-    thatData.params.clusterIndex = cInd;
-    set(thatFig, 'UserData', thatData);
-    
+function smWin = genSmWin(p)
+
+switch p.filterType
+    case 1 % gaussian
+        gw = gausswin(round(p.smoothSize*6),3);
+        smWin = gw./sum(gw);
+        fprintf(1, 'filter is gaussian with stdev %.2f ms\n', p.smoothSize);
+    case 2 % half gaussian, causal
+        gw = gausswin(round(p.smoothSize*6),3);
+        gw(1:round(numel(gw)/2)) = 0;
+        smWin = gw./sum(gw);
+        fprintf(1, 'filter is causal half-gaussian with stdev %.2f ms\n', p.smoothSize);
+    case 3 % box
+        smWin = ones(round(p.smoothSize*2),1);
+        fprintf(1, 'filter is box with width %.2f ms\n', p.smoothSize*2);
 end
-
-end
-
-
-function plotOtherFigs(f)
-myData = get(f, 'UserData');
-for thatFig = myData.otherFigs
-%     thatFigFcn = get(thatFig, 'KeyPressFcn');
-    figs = get(0, 'Children');
-    figNumsCell = get(figs, 'Number');
-    figNums = [figNumsCell{:}];
-    thatFigObj = figs(figNums==thatFig);
-    psthViewerPlot(thatFigObj);
-end
-figure(f) % return focus here
 end
 
 function makepretty()
