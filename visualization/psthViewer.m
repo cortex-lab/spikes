@@ -1,6 +1,6 @@
 
 
-function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
+function psthViewer(spikeTimes, clu, eventTimes, window, trGroups, varargin)
 % function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 %
 % Controls:
@@ -12,20 +12,20 @@ function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
 % -
 %
 % TODO:
-% - if plotting all traces, color raster and sort
+% XX if plotting all traces, color raster and sort
 % - don't replot traces just change X,Y data for speed and for keeping zoom
 % levels
-% - indicate on tuning curve which color is which
-% - add ability to switch from graded to distinguishable color scheme, also
+% XX indicate on tuning curve which color is which
+% XX add ability to switch from graded to distinguishable color scheme, also
 % cyclical
 % - add support for a second grouping variable - in that case, should use a
 % different graded color scheme for each, overlay the traces in the tuning
 % curve view, and also provide a 2-d image of tuning curve
-% - add support for plot labels (traces in psth, x-axis in tuning curve)
-% - option to change filter type
+% XX add support for plot labels (traces in psth, x-axis in tuning curve)
+% XX option to change filter type
 % XX expand calc window to avoid falling off at the edges
-% - option for error bars
-% - fix bug where the raster from the last unit stays when there are no new
+% XX option for error bars
+% XX fix bug where the raster from the last unit stays when there are no new
 % spikes to plot
 
 fprintf(1, 'Controls:\n')
@@ -36,7 +36,19 @@ fprintf(1, '- t: toggle showing psth traces for each grouping variable or just t
 fprintf(1, 'overall. If showing just overall, raster is sorted chronologically. If\n')
 fprintf(1, 'showing by grouping variable, raster is sorted by that variable.\n')
 fprintf(1, '- r: select a new range within which to count spikes for the tuning curve\n')
+fprintf(1, '- f: change smoothing filter type\n')
+fprintf(1, '- x: change color scheme\n')
+fprintf(1, '- e: turn on error bars\n')
+fprintf(1, '- 1/2: decrease/increase the raster tick size\n')
 
+if ~isempty(varargin)
+    p = varargin{1}; % parameters supplied by user
+else
+    p = [];
+end
+
+params.groupingName = getOr(p, 'groupingName', 'Grouping variable value'); 
+params.groupingLegend = getOr(p, 'groupingLegend', unique(trGroups)); 
 
 params.smoothSize = 15; % in msec, stdev of gaussian smoothing filter
 params.clusterIndex = 1;
@@ -65,7 +77,8 @@ myData.trGroupLabels = unique(myData.trGroups);
 myData.nGroups = length(myData.trGroupLabels);
 myData.plotAxes = [];
 
-params.colors = copper(myData.nGroups); params.colors = params.colors(:, [3 2 1]);
+params.colorType = 1; 
+params.colors = genColors(params.colorType, myData.nGroups); 
 
 myData.params = params;
 
@@ -110,9 +123,10 @@ if p.showAllTraces
         stderr = zeros(nGroups, numel(bins));
     end
     for g = 1:nGroups
-        psthSm(g,:) = mean(baSm(myData.trGroups==trGroupLabels(g),:));
-        if myData.params.showErrorShading
-            stderr(g,:) = std(baSm)./sqrt(size(baSm,1));
+        theseTr = myData.trGroups==trGroupLabels(g);
+        psthSm(g,:) = mean(baSm(theseTr,:));
+        if p.showErrorShading
+            stderr(g,:) = std(baSm(theseTr,:))./sqrt(sum(theseTr));
         end
     end
 else
@@ -125,8 +139,8 @@ else
 end
 
 % compute raster
-if myData.params.showAllTraces
-    [~, inds] = sort(myData.trGroups);
+if p.showAllTraces
+    [sortedGroups, inds] = sort(myData.trGroups);
     [tr,b] = find(ba(inds,:));
 else
     [tr,b] = find(ba);
@@ -135,7 +149,9 @@ end
 rasterY = yy+reshape(repmat(tr',3,1),1,length(tr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
 
 % scale the raster ticks
-rasterY(2:3:end) = rasterY(2:3:end)+myData.params.rasterScale;
+rasterY(2:3:end) = rasterY(2:3:end)+(myData.params.rasterScale-1);
+
+if isempty(rasterX); rasterX = NaN; rasterY = NaN; end % so that there's something to plot and the plot will clear
 
 % compute the tuning curve
 tuningCurve = zeros(nGroups,2);
@@ -162,11 +178,19 @@ axes(myData.plotAxes(1));
 hold off;
 if p.showAllTraces
     for g = 1:nGroups
-        plot(bins, psthSm(g,:), 'Color', colors(g,:), 'LineWidth', 2.0);
+        if p.showErrorShading
+            plotWithErr(bins, psthSm(g,:), stderr(g,:), colors(g,:));
+        else
+            plot(bins, psthSm(g,:), 'Color', colors(g,:), 'LineWidth', 2.0);
+        end
         hold on;
     end
 else
-    plot(bins, psthSm);
+    if p.showErrorShading
+        plotWithErr(bins, psthSm, stderr, 'k'); 
+    else
+        plot(bins, psthSm, 'k');
+    end
 end
 xlim(plotWindow);
 title(['Cluster ' num2str(myData.clusterIDs(p.clusterIndex))]);
@@ -182,21 +206,37 @@ box off;
 % subplot(3,1,2);
 axes(myData.plotAxes(2));
 hold off;
-plot(rasterX,rasterY, 'k');
+if p.showAllTraces
+    ug = unique(myData.trGroups);
+    
+    for g = 1:nGroups
+        theseTr = find(sortedGroups==ug(g)); 
+        ry = rasterY>=theseTr(1) & rasterY<=theseTr(end);
+        ry(2:3:end) = ry(1:3:end); 
+        plot(rasterX(ry), rasterY(ry), 'Color', colors(g,:)); hold on;
+    end
+else
+    plot(rasterX,rasterY, 'k');
+end
 xlim(myData.params.window);
 ylim([0 length(myData.eventTimes)+1]);
-ylabel('event number');
-xlabel('time (sec)');
+ylabel('Event Number');
+xlabel('Time (s)');
 makepretty;
 box off;
 
 % subplot(3,1,3);
 axes(myData.plotAxes(3));
 hold off;
-errorbar(trGroupLabels, tuningCurve(:,1), tuningCurve(:,2), 'o-');
-xlabel('grouping variable value');
-ylabel('average firing rate (Hz)');
+%errorbar(trGroupLabels, tuningCurve(:,1), tuningCurve(:,2), 'o-');
+hh = plot(trGroupLabels, tuningCurve(:,1), 'k'); hold on;
+arrayfun(@(x)plot(trGroupLabels(x)*[1 1], tuningCurve(x,1)+tuningCurve(x,2)*[-1 1], 'Color',  colors(x,:), 'LineWidth', 2.0), 1:nGroups);
+arrayfun(@(x)plot(trGroupLabels(x), tuningCurve(x,1), 'o', 'Color',  colors(x,:), 'LineWidth', 2.0), 1:nGroups);
+xlabel(p.groupingName);
+ylabel('Average firing rate (sp/s)');
+set(myData.plotAxes(3), 'XTick', trGroupLabels, 'XTickLabel', p.groupingLegend); 
 makepretty;
+set(hh, 'LineWidth', 1.0); 
 box off;
 
 % drawnow;
@@ -272,7 +312,15 @@ switch keydata.Key
             p.clusterIndex = ind;
         end
         
+    case 'x'
+        p.colorType = p.colorType+1;
+        p.colors = genColors(p.colorType, myData.nGroups);
         
+    case '2' % increase tick size
+        p.rasterScale = p.rasterScale*1.5;
+        
+    case '1' % decrease tick size
+        p.rasterScale = p.rasterScale/1.5;
 end
 
 myData.params = p;
@@ -294,13 +342,13 @@ switch p.filterType
         smWin = gw./sum(gw);
         fprintf(1, 'filter is gaussian with stdev %.2f ms\n', p.smoothSize);
     case 2 % half gaussian, causal
-        gw = gausswin(round(p.smoothSize*6),3);
+        gw = gausswin(round(p.smoothSize*6*3),3);
         gw(1:round(numel(gw)/2)) = 0;
         smWin = gw./sum(gw);
-        fprintf(1, 'filter is causal half-gaussian with stdev %.2f ms\n', p.smoothSize);
+        fprintf(1, 'filter is causal half-gaussian with stdev %.2f ms\n', p.smoothSize*3);
     case 3 % box
-        smWin = ones(round(p.smoothSize*2),1);
-        fprintf(1, 'filter is box with width %.2f ms\n', p.smoothSize*2);
+        smWin = ones(round(p.smoothSize*3),1);
+        fprintf(1, 'filter is box with width %.2f ms\n', p.smoothSize*3);
 end
 end
 
@@ -327,4 +375,26 @@ for c = 1:length(ch)
     end
 end
 
+end
+
+function colors = genColors(colorType, nColors)
+
+switch mod(colorType, 3)
+    case 1 % blue linear map
+        colors = copper(nColors); 
+        colors = colors(:, [3 2 1]);
+    case 2 % distinguishable colors - default matlab order with black and gray
+        colors = get(gca, 'ColorOrder'); 
+        colors = [colors; 0 0 0; 0.5 0.5 0.5]; 
+        nc = size(colors,1);
+        colors = colors(mod(0:nColors-1,nc)+1,:);
+    case 0 % cyclical 
+        %colors = hsv(nColors);
+        m = colorcet('C6');
+        colors = zeros(nColors,3); 
+        for c = 1:3
+            qidx = linspace(1,size(m,1), nColors+1); 
+            colors(:,c) = interp1(1:size(m,1), m(:,c), qidx(1:end-1));
+        end
+end
 end
