@@ -1,15 +1,11 @@
 
 
 function psthViewer(spikeTimes, clu, eventTimes, window, trGroups, varargin)
-% function psthViewer(spikeTimes, clu, eventTimes, window, trGroups)
+% function psthViewer(spikeTimes, clu, eventTimes, window, trGroups[, params])
 %
-% Controls:
-% - c: dialog box to pick a new cluster ID number
-% - t: toggle showing psth traces for each grouping variable or just the
-% overall. If showing just overall, raster is sorted chronologically. If
-% showing by grouping variable, raster is sorted by that variable.
-% - r: select a new range within which to count spikes for the tuning curve
-% -
+% Controls: see the command window text on startup. 
+% params can include 'groupingName' (a string) and 'groupingLegend' (a cell
+% array of strings)
 %
 % TODO:
 % XX if plotting all traces, color raster and sort
