@@ -79,7 +79,7 @@ params.colors = genColors(params.colorType, myData.nGroups);
 myData.params = params;
 
 f = figure; f.Color = 'w';
-set(f, 'Renderer', 'painters')
+% set(f, 'Renderer', 'painters')
 
 set(f, 'UserData', myData);
 set(f, 'KeyPressFcn', @(f,k)psthViewerCallback(f, k));
@@ -208,8 +208,15 @@ if p.showAllTraces
     for g = 1:nGroups
         theseTr = find(sortedGroups==ug(g)); 
         ry = rasterY>=theseTr(1) & rasterY<=theseTr(end);
-        ry(2:3:end) = ry(1:3:end); 
-        plot(rasterX(ry), rasterY(ry), 'Color', colors(g,:)); hold on;
+        
+        if any(ry)
+            ry(2:3:end) = ry(1:3:end);
+            plot(rasterX(ry), rasterY(ry), 'Color', colors(g,:));        
+            
+        else
+            plot(0, 0, 'Color', colors(g,:)); 
+        end
+        hold on;
     end
 else
     plot(rasterX,rasterY, 'k');
