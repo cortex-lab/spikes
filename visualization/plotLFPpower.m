@@ -18,7 +18,7 @@ imagesc(F(dispF), (0:nC-1)*10, 10*log10(allPowerEst(:,dispF)));
 xlim(dispRange);
 xlabel('frequency (Hz)');
 set(gca, 'YDir', 'normal');
-ylabel('depth on probe (µm)');
+ylabel('depth on probe (Âµm)');
 % h = colorbar;
 % h.Label.String = 'power (dB)';
 makepretty
@@ -28,7 +28,7 @@ set(ax, 'ColorOrder', copper(length(marginalChans)));
 plot(F(dispF), 10*log10(allPowerEst(marginalChans,dispF)));
 ylabel('power (dB)');
 set(ax, 'XTick', []);
-hleg = legend(array2stringCell(marginalChans*10));
+hleg = legend(arrayfun(@num2str, marginalChans*10, 'un', 0));
 set(hleg, 'Position', [0.7125    0.7607    0.1036    0.2083]);
 makepretty;
 
