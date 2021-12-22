@@ -11,6 +11,7 @@ function [psth, bins, rasterX, rasterY, spikeCounts] = psthRasterAndCounts(spike
 %
 % Notes on outputs:
 % - psth can be plotted with plot(bins, psth);
+%         bins is an array of bin-centers, psth is the array of counts associated with each bin
 % - rasters can be plotted with plot(rasterX, rasterY);
 % - spikeCounts is nEvents x 1, where each entry is the number of spikes
 % that occurred within the window around that event. 
@@ -28,8 +29,9 @@ stIn = spikeTimes(wr>0); wr = wr(wr>0); % pick just the spikes and range indices
 stRelToEvent = stIn-eventTimes(wr); % subtract the event time corresponding to each spike
 
 
-[psth,bins] = hist(stRelToEvent, [window(1):psthBinSize:window(2)]);
-
+edges = window(1):psthBinSize:window(2);
+[psth, edges] = histcounts(stRelToEvent, edges);
+bins = edges(1:end-1) + psthBinSize/2; 
 
 [rasterX,yy] = rasterize(stRelToEvent); 
 rasterY = yy+reshape(repmat(wr,3,1),1,length(wr)*3); % yy is of the form [0 1 NaN 0 1 NaN...] so just need to add trial number to everything
