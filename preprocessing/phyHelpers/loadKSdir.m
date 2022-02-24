@@ -1,6 +1,30 @@
-
-
 function spikeStruct = loadKSdir(ksDir, varargin)
+% spikeStruct = loadKSdir(ksDir) loads kilosorted ephys data. Input
+% argument should be a path to a folder containing the output kilosort.
+% The output spikeStruct contains the following data:
+%
+% -dat_path, n_channels_dat, dtype, offset, sample_rate, hp_filtered: these
+% are parameter variables associated with the recording. Most variables are
+% self-explanatory. 
+% -st: vector of all spike event times
+% -spikeTemplates: vector of the template identity associated with each
+% spike event. [0 indexed]
+% -clu: vector of cluster IDs associated with each spike event. This can
+% differ from spikeTemplates because spikes from multiple kilosort
+% templates can be merged. Or spikes from one template can be split into 
+% separate clusters.
+% cluster (same value in clu).
+% -tempScalingAmps: vector of scaling factors associated with each spike
+% event. This value reflects how much the kilosort template for the cluster
+% was scaled to match the waveform of each spike event.
+% -cids: list of cluster IDs
+% -xcoords, ycoords: location of each channel on the probe
+% -temps: clusterID x time x channel matrix, containing the kilosort
+% template for each cluster.
+% -winv: whitening matrix used to ensure all channels have the same
+%   variance.
+% -pcFeat: PCA analysis on spike statistics
+% -pcFeatInd: PCA analysis on spike statistics
 
 if ~isempty(varargin)
     params = varargin{1};
@@ -39,6 +63,7 @@ else
     pcFeatInd = [];
 end
 
+%Load phy annotation labels (cluster_groups.csv or .tsv)
 cgsFile = '';
 if exist(fullfile(ksDir, 'cluster_groups.csv')) 
     cgsFile = fullfile(ksDir, 'cluster_groups.csv');
@@ -46,6 +71,9 @@ end
 if exist(fullfile(ksDir, 'cluster_group.tsv')) 
    cgsFile = fullfile(ksDir, 'cluster_group.tsv');
 end 
+if exist(fullfile(ksDir, 'cluster_KSLabel.tsv')) 
+    cgsFile = fullfile(ksDir, 'cluster_KSLabel.tsv');
+end
 if ~isempty(cgsFile)
     [cids, cgs] = readClusterGroupsCSV(cgsFile);
 
