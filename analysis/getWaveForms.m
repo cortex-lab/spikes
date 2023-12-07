@@ -47,6 +47,8 @@ waveFormsMean = nan(numUnits,nChInMap,wfNSamples);
 for curUnitInd=1:numUnits
     curUnitID = unitIDs(curUnitInd);
     curSpikeTimes = gwfparams.spikeTimes(gwfparams.spikeClusters==curUnitID);
+    curSpikeTimes((curSpikeTimes + gwfparams.wfWin(1)) < 1) = [];
+    curSpikeTimes((curSpikeTimes + gwfparams.wfWin(end)) > size(mmf.Data.x,2)) = [];
     curUnitnSpikes = size(curSpikeTimes,1);
     spikeTimesRP = curSpikeTimes(randperm(curUnitnSpikes));
     spikeTimeKeeps(curUnitInd,1:min([gwfparams.nWf curUnitnSpikes])) = sort(spikeTimesRP(1:min([gwfparams.nWf curUnitnSpikes])));
